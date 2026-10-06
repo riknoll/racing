@@ -1,0 +1,1 @@
+F1 track SVGs taken from https://github.com/f1laps/f1-track-vectors/tree/981ef8e7bc9cb98380602f65f9b7b7f2ba0fe5d9. See LICENSE in that repo for usage details.
