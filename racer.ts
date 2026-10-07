@@ -6,7 +6,7 @@ namespace racing {
     export const TURN_RATE_MAX = mathUtils.degreesToRadians(TURN_RATE_MAX_DEGREES);
 
     export const TOP_SPEED_MIN = 70;
-    export const TOP_SPEED_MAX = 150;
+    export const TOP_SPEED_MAX = 200;
 
     export const ACCELERATION_MIN = 5;
     export const ACCELERATION_MAX = 100;
@@ -245,8 +245,7 @@ namespace racing {
         maxSpeed: number,
         maxAcceleration: number
     ) {
-        // acceleration is a function of the current speed. lower speeds have higher acceleration
-        // and higher speeds have lower acceleration. it's an exponential decay function.
-        return maxAcceleration * Math.exp(-currentSpeed / maxSpeed);
+        // Keep the initial response while tapering acceleration more strongly near top speed.
+        return maxAcceleration * Math.exp(-2 * Math.max(0, currentSpeed) / maxSpeed);
     }
 }
