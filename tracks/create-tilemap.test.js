@@ -212,6 +212,12 @@ test("encodes valid dimensions, cells, tileset, and wall layer for MakeCode", ()
     assert.match(source, /tiles\.setCurrentTilemap\(tiles\.createTilemap\(/)
     assert.match(source, /TileScale\.Sixteen/)
     assert.equal((source.match(/img`/g) || []).length, map.images.length + 1)
+    const renderedImages = Array.from(source.matchAll(/img`([^`]+)`/g), match => match[1])
+    assert.ok(renderedImages.every(image => !/[17]/.test(image)),
+        "grass and road in every emitted tile image must use their output colors")
+    assert.ok(!renderedImages[1].includes("1"), "the grass tile is fully transparent")
+    assert.match(renderedImages[2], /b{16}/, "full road uses color 11")
+    assert.ok(renderedImages.every(image => !image.includes("c")), "detailed mode has no outline")
     assert.ok(map.terrain.includes(0) && map.terrain.includes(1))
     assert.ok(map.images.length > 2 && map.images.length <= 256)
     assert.ok(map.images.slice(2).some(image => image.includes("7") && image.includes("1")))
@@ -230,6 +236,45 @@ test("encodes valid dimensions, cells, tileset, and wall layer for MakeCode", ()
     }
     assert.match(source, /Each gate is start X\/Y, end X\/Y as UInt16LE pixels/)
     assert.match(source, /\/\/% whenUsed\s+const trackWaypoints = hex`/)
+})
+
+test("compact outline is four pixels outside the road without changing road pixels", () => {
+    const svg = `<svg><path d="M0 0 L100 0 L100 70 L0 70 Z"/>
+        <path stroke="red" d="M0 0 L100 0"/>
+        <path stroke="yellow" d="M0 70 L0 0"/></svg>`
+    const map = makeTilemap(svg, { size: 100, width: 4, simplify: 2, tileset: "compact" })
+    const source = formatTilemap(map)
+    const bytes = Buffer.from(source.match(/hex`([0-9a-f]+)`/)[1], "hex")
+    const images = Array.from(source.matchAll(/img`([^`]+)`/g), match =>
+        match[1].trim().split(/\s+/).join("")).slice(1)
+    assert.ok(images.length > map.images.length)
+    const pixelAt = (x, y) => {
+        const tile = Math.floor(y / 16) * map.width + Math.floor(x / 16)
+        return images[bytes[4 + tile]][(y % 16) * 16 + x % 16]
+    }
+    const roadAt = (x, y) => {
+        const tile = Math.floor(y / 16) * map.width + Math.floor(x / 16)
+        return map.images[map.tiles[tile]][(y % 16) * 17 + x % 16] === "1"
+    }
+    for (let y = 0; y < map.height * 16; y++) {
+        for (let x = 0; x < map.width * 16; x++) {
+            assert.equal(pixelAt(x, y) === "b", roadAt(x, y),
+                `outline changed road at pixel ${x},${y}`)
+        }
+    }
+    const x = Math.floor((map.points[0].x + map.points[1].x) * 8)
+    let edge
+    for (let y = 5; y < map.height * 16 - 5; y++) {
+        if (roadAt(x, y) && !roadAt(x, y - 1)) {
+            edge = y
+            break
+        }
+    }
+    assert.ok(edge !== undefined)
+    for (let delta = 1; delta <= 4; delta++) {
+        assert.equal(pixelAt(x, edge - delta), "c", `missing outline at depth ${delta}`)
+    }
+    assert.equal(pixelAt(x, edge - 5), "0")
 })
 
 test("generates recognizable closed roads from the included tracks", () => {
@@ -751,12 +796,45 @@ test("CLI selects compact output without changing the detailed default", () => {
     const usa = path.join(__dirname, "usa.svg")
     const compact = spawnSync(process.execPath, [script, usa, "--tileset", "compact"], { encoding: "utf8" })
     assert.equal(compact.status, 0, compact.stderr)
-    assert.equal((compact.stdout.match(/img`/g) || []).length, 27)
+    assert.ok((compact.stdout.match(/img`/g) || []).length > 27)
     assert.match(compact.stdout, /trackWaypoints = hex`[0-9a-f]+`/)
+    const detailed = spawnSync(process.execPath,
+        [script, usa, "--outline-color", "ignored"], { encoding: "utf8" })
+    assert.equal(detailed.status, 0, detailed.stderr)
+    assert.doesNotMatch(detailed.stdout, /c{16}/)
     const invalid = spawnSync(process.execPath,
         [script, usa, "--tileset", "compact", "--angles", "32"], { encoding: "utf8" })
     assert.equal(invalid.status, 1)
     assert.match(invalid.stderr, /requires --angles 16/)
+})
+
+test("CLI accepts distinct grass, road, and outline palette colors", () => {
+    const script = path.join(__dirname, "create-tilemap.js")
+    const usa = path.join(__dirname, "usa.svg")
+    const result = spawnSync(process.execPath,
+        [script, "--tileset", "compact", "--grass-color", "5", "--road-color", "14",
+            "--outline-color", "3", usa],
+        { encoding: "utf8" })
+    assert.equal(result.status, 0, result.stderr)
+    const images = Array.from(result.stdout.matchAll(/img`([^`]+)`/g), match => match[1])
+    assert.match(images[1], /5{16}/, "grass uses the requested color")
+    assert.match(images[2], /e{16}/, "road uses the requested color")
+    assert.ok(images.some(image => image.includes("3")), "outline uses the requested color")
+    for (const [flag, value, message, tileset] of [
+        ["--grass-color", "-1", /--grass-color must be an integer from 0 to 15/],
+        ["--road-color", "16", /--road-color must be an integer from 0 to 15/],
+        ["--road-color", "nope", /--road-color must be an integer from 0 to 15/],
+        ["--outline-color", "2.5", /--outline-color must be an integer from 0 to 15/, "compact"],
+        ["--road-color", "0", /--grass-color and --road-color must differ/],
+        ["--outline-color", "11", /--grass-color, --road-color, and --outline-color must differ/, "compact"],
+    ]) {
+        const invalid = spawnSync(process.execPath,
+            [script, ...(tileset ? ["--tileset", tileset] : []), flag, value, usa], { encoding: "utf8" })
+        assert.equal(invalid.status, 1)
+        assert.match(invalid.stderr, message)
+    }
+    assert.throws(() => makeTilemap("", { grassColor: 7, roadColor: 7 }),
+        /--grass-color and --road-color must differ/)
 })
 
 test("CLI renders the angle-aligned Monaco loop in compact mode", () => {
@@ -770,7 +848,8 @@ test("CLI renders the angle-aligned Monaco loop in compact mode", () => {
         { size: 200, width: 4, simplify: 2, angles: 16, tileset: "compact" })
     assert.equal(bytes.readUInt16LE(0), map.width)
     assert.equal(bytes.readUInt16LE(2), map.height)
-    assert.deepEqual(bytes.subarray(4), Buffer.from(map.tiles))
+    assert.equal(bytes.length, 4 + map.tiles.length)
+    assert.notDeepEqual(bytes.subarray(4), Buffer.from(map.tiles))
 })
 
 test("batch resources share named tiles and preserve both maps and their gates", () => {
@@ -782,15 +861,20 @@ test("batch resources share named tiles and preserve both maps and their gates",
     const { ts, jres } = formatBatch(entries)
     const resources = JSON.parse(jres)
     const names = resources.monaco.tileset
-    assert.equal(names.length, 27)
+    assert.ok(names.length > 27 && names.length <= 256)
     assert.deepEqual(resources.usa.tileset, names)
-    assert.equal(new Set(names).size, 27)
+    assert.equal(new Set(names).size, names.length)
     assert.deepEqual(names.slice(0, 3),
         ["myTiles.transparency16", "myTiles.grass", "myTiles.road"])
     const transparency = Buffer.from(resources.transparency16.data, "base64")
     assert.deepEqual([...transparency.subarray(0, 8)], [0x87, 4, 16, 0, 16, 0, 0, 0])
     assert.ok(transparency.subarray(8).every(byte => byte === 0))
+    assert.ok(Buffer.from(resources.grass.data, "base64").subarray(8).every(byte => byte === 0),
+        "grass tiles must be fully transparent")
+    assert.ok(Buffer.from(resources.road.data, "base64").subarray(8).every(byte => byte === 0xbb),
+        "road tiles must use color 11")
     assert.ok(names.some(name => name.includes("Shallow")))
+    assert.ok(names.some(name => name.startsWith("myTiles.grassOutline")))
     assert.match(ts, /helpers\._registerFactory\("tilemap"/)
     assert.match(ts, /helpers\._registerFactory\("tile"/)
     assert.match(ts, /namespace trackWaypoints/)
@@ -803,8 +887,17 @@ test("batch resources share named tiles and preserve both maps and their gates",
         const bytes = Buffer.from(data.slice(2, 2 + length), "hex")
         assert.equal(bytes.readUInt16LE(0), map.width)
         assert.equal(bytes.readUInt16LE(2), map.height)
-        assert.deepEqual(bytes.subarray(4),
-            Buffer.from(Uint8Array.from(map.tiles, tile => tile + 1)))
+        for (let tile = 0; tile < map.tiles.length; tile++) {
+            const original = map.images[map.tiles[tile]].replaceAll("\n", "")
+            const imageName = names[bytes[4 + tile]].slice("myTiles.".length)
+            const image = Buffer.from(resources[imageName].data, "base64")
+            for (let pixel = 0; pixel < 256; pixel++) {
+                const x = pixel % 16
+                const y = pixel >> 4
+                const color = image[8 + x * 8 + (y >> 1)] >> ((y & 1) * 4) & 15
+                assert.equal(color === 11, original[pixel] === "1")
+            }
+        }
         assert.match(ts, new RegExp(`case "${id}":`))
         const route = ts.match(new RegExp(`//% whenUsed\\s+export const ${id} = hex\`([0-9a-f]+)\``))
         assert.ok(route)
@@ -821,9 +914,15 @@ test("batch resources share named tiles and preserve both maps and their gates",
     }
     const image = Buffer.from(resources.roadDiagonalSouthEast.data, "base64")
     assert.deepEqual([...image.subarray(0, 8)], [0x87, 4, 16, 0, 16, 0, 0, 0])
+    for (const name of names) {
+        const pixels = Buffer.from(resources[name.slice("myTiles.".length)].data, "base64").subarray(8)
+        assert.ok(pixels.every(byte => (byte & 15) !== 7 && (byte >> 4) !== 7),
+            `${name} must not contain green pixels`)
+    }
     for (const [x, y] of [[0, 0], [15, 0], [0, 15], [15, 15], [5, 9]]) {
         const color = image[8 + x * 8 + (y >> 1)] >> ((y & 1) * 4) & 15
-        assert.equal(color, Number(entries[0].map.images[2][y * 17 + x]))
+        const original = entries[0].map.images[2][y * 17 + x]
+        assert.equal(color, original === "7" ? 0 : 11)
     }
     const broken = { ...entries[0].map,
         finish: { ...entries[0].map.finish, x: entries[0].map.width + 100 } }
@@ -835,6 +934,12 @@ test("batch resources share named tiles and preserve both maps and their gates",
         /crowded\.svg: Shared tileset needs 257 images/)
     assert.throws(() => formatBatch([{ name: "road.svg", map: entries[0].map }]),
         /road\.svg: Track name conflicts with tile name/)
+    assert.throws(() => formatBatch([
+        entries[0], { ...entries[1], map: { ...entries[1].map, roadColor: 1 } },
+    ]), /usa\.svg: Batch tracks must use the same grass, road, and outline colors/)
+    assert.throws(() => formatBatch([
+        entries[0], { ...entries[1], map: { ...entries[1].map, outlineColor: 2 } },
+    ]), /usa\.svg: Batch tracks must use the same grass, road, and outline colors/)
 })
 
 test("CLI batch writes shared generated assets without changing single-map CLI", () => {
@@ -856,6 +961,21 @@ test("CLI batch writes shared generated assets without changing single-map CLI",
         assert.deepEqual(Object.keys(assets).slice(-3), ["monaco", "usa", "*"])
         assert.match(source, /\/\/% whenUsed\s+export const monaco = hex`[0-9a-f]+`/)
         assert.match(source, /\/\/% whenUsed\s+export const usa = hex`[0-9a-f]+`/)
+        const customOutput = path.join(directory, "custom")
+        const recolored = spawnSync(process.execPath,
+            [script, "--batch", "--grass-color", "5", "--road-color", "14",
+                "--outline-color", "3",
+                "--output", customOutput], { encoding: "utf8" })
+        assert.equal(recolored.status, 0, recolored.stderr)
+        const custom = JSON.parse(fs.readFileSync(path.join(customOutput, "tilemap.g.jres"), "utf8"))
+        assert.ok(Buffer.from(custom.grass.data, "base64").subarray(8).every(byte => byte === 0x55))
+        assert.ok(Buffer.from(custom.road.data, "base64").subarray(8).every(byte => byte === 0xee))
+        const outlinedName = Object.keys(custom).find(name => name.startsWith("grassOutline"))
+        assert.ok(outlinedName)
+        assert.ok(Buffer.from(custom[outlinedName].data, "base64").subarray(8).includes(0x33))
+        assert.ok(Buffer.from(custom.transparency16.data, "base64").subarray(8).every(byte => byte === 0))
+        assert.equal(custom.monaco.data, assets.monaco.data)
+        assert.equal(custom.usa.data, assets.usa.data)
     } finally {
         fs.rmSync(directory, { recursive: true, force: true })
     }

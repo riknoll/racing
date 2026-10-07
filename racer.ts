@@ -11,11 +11,11 @@ namespace racing {
     export const ACCELERATION_MIN = 5;
     export const ACCELERATION_MAX = 100;
 
-    export const DECCELERATION_MIN = 5;
-    export const DECCELERATION_MAX = 50;
+    export const DECCELERATION_MIN = 100
+    export const DECCELERATION_MAX = 200;
 
-    export const FRICTION_DECELERATION_MIN = 1;
-    export const FRICTION_DECELERATION_MAX = 10;
+    export const FRICTION_DECELERATION_MIN = 20;
+    export const FRICTION_DECELERATION_MAX = 50;
 
     export const OFF_ROAD_TOP_SPEED = 20;
     export const OFF_ROAD_DECCELERATION = 100;
@@ -112,7 +112,8 @@ namespace racing {
                     this.speed = changeSpeed(this.speed, this.stats.topSpeed, this.stats.friction, deltaTimeMillis);
                 }
                 else if (this.speed < this.stats.topSpeed) {
-                    this.speed = changeSpeed(this.speed, this.stats.topSpeed, this.stats.acceleration, deltaTimeMillis);
+                    const acceleration = calculateAcceleration(this.speed, this.stats.topSpeed, this.stats.acceleration);
+                    this.speed = changeSpeed(this.speed, this.stats.topSpeed, acceleration, deltaTimeMillis);
                 }
             }
             else if (this.controlState & ControlStateFlag.BrakingOn || (this.controlState & ControlStateFlag.ReverseOn && this.speed > 0)) {
@@ -190,7 +191,7 @@ namespace racing {
 
         updateControls() {
             this.controlState = 0;
-            if (controller.A.isPressed()) {
+            if (controller.A.isPressed() || controller.up.isPressed()) {
                 this.controlState |= ControlStateFlag.AccelerationOn;
             }
             if (controller.B.isPressed()) {
@@ -217,7 +218,7 @@ namespace racing {
             const offsetX = (this.x - (col << map.scale));
             const offsetY = (this.y - (row << map.scale));
 
-            if (tileImage.getPixel(offsetX, offsetY) === 7) {
+            if (tileImage.getPixel(offsetX, offsetY) !== myTiles.road.getPixel(0, 0)) {
                 return true;
             }
             return false;
@@ -237,5 +238,15 @@ namespace racing {
             }
         }
         return currentSpeed;
+    }
+
+    function calculateAcceleration(
+        currentSpeed: number,
+        maxSpeed: number,
+        maxAcceleration: number
+    ) {
+        // acceleration is a function of the current speed. lower speeds have higher acceleration
+        // and higher speeds have lower acceleration. it's an exponential decay function.
+        return maxAcceleration * Math.exp(-currentSpeed / maxSpeed);
     }
 }

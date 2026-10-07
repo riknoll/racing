@@ -2,6 +2,7 @@
     "name": "my-project",
     "version": "0.0.0",
     "files": [
+        "background.ts",
         "racer.ts",
         "carImages.ts",
         "main.ts",
@@ -14,7 +15,8 @@
     "dependencies": {
         "device": "*",
         "arcade-math-utils": "github:riknoll/arcade-math-utils#master",
-        "arcade-drawing-utils": "github:riknoll/arcade-drawing-utils#v0.1.1"
+        "arcade-drawing-utils": "github:riknoll/arcade-drawing-utils#v0.1.1",
+        "arcade-background-scroll": "github:microsoft/arcade-background-scroll#v0.1.2"
     },
     "testDependencies": {}
 }

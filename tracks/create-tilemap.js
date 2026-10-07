@@ -2,8 +2,8 @@
 const fs = require("node:fs")
 const path = require("node:path")
 
-const usage = `Usage: node tracks/create-tilemap.js <track.svg> [--size 200] [--width 4] [--simplify 2] [--angles 32] [--tileset detailed|compact] [--output track.ts]
-       node tracks/create-tilemap.js --batch [--size 200] [--width 4] [--simplify 2] [--tileset compact] [--output directory]
+const usage = `Usage: node tracks/create-tilemap.js <track.svg> [--size 200] [--width 4] [--simplify 2] [--angles 32] [--tileset detailed|compact] [--grass-color 0] [--road-color 11] [--outline-color 12] [--output track.ts]
+       node tracks/create-tilemap.js --batch [--size 200] [--width 4] [--simplify 2] [--tileset compact] [--grass-color 0] [--road-color 11] [--outline-color 12] [--output directory]
 
 Writes a standalone MakeCode Arcade TypeScript tilemap (16-pixel tiles).
 --batch reads every SVG in tracks/ and writes tilemap.g.ts and tilemap.g.jres
@@ -14,15 +14,20 @@ Batch mode defaults to the compact tileset and includes per-track road gates.
 --angles divides a full turn into allowed directions (32 means increments of PI/16;
 16 means increments of PI/8; 0 disables angle snapping).
 --tileset compact uses 16 directions, nudging shallow PI/8 angles to the
-tiles' 1:2 pixel slope (about 26.6 degrees), and a fixed 26-image palette:
+tiles' 1:2 pixel slope (about 26.6 degrees), and a fixed 26-image road palette:
 grass, full road, four diagonal corners, sixteen shallow edges, and four half tiles.
+Compact mode adds an approximately four-pixel outline without changing road pixels.
 Short adjacent corners are combined when they stay within --simplify deviation.
 Road tiles must have matching sides, except a full road tile can meet a
 half-width slope when its edge follows the rasterized road. Half-width edges
 cannot end in grass. Increase road width or map size if a layout cannot fit.
 The default detailed tileset retains the exact pixel-art edges where possible.
-The longest closed SVG path is used as the track centerline. Grass (0), road (1),
+The longest closed SVG path is used as the track centerline. Grass, road,
 and generated edge tiles draw straight road edges at 16 pixels per tile.
+--grass-color and --road-color accept distinct palette indices from 0 to 15.
+In compact mode, --outline-color must also differ from both colors. Grass defaults
+to transparent (0), road to 11, and the compact outline to 12. Detailed mode
+ignores --outline-color and does not add an outline.
 The SVG must mark the finish with red and yellow paths. The output includes
 trackWaypoints: pairs of gate endpoints (start X/Y, end X/Y as UInt16LE pixels),
 one gate before and one after each generated turn in the yellow-to-red
@@ -30,8 +35,29 @@ direction. Gates are up to three times the road width, stopping short of
 neighboring road segments or the map edge. The first gate precedes the first
 turn after the finish.`
 
+function paletteColors(config) {
+    const grassColor = config.grassColor ?? 0
+    const roadColor = config.roadColor ?? 11
+    for (const [name, value] of [["grass", grassColor], ["road", roadColor]]) {
+        if (!Number.isInteger(value) || value < 0 || value > 15) {
+            throw new Error(`--${name}-color must be an integer from 0 to 15`)
+        }
+    }
+    if (grassColor === roadColor) throw new Error("--grass-color and --road-color must differ")
+    if (config.tileset !== "compact") return { grassColor, roadColor }
+    const outlineColor = config.outlineColor ?? 12
+    if (!Number.isInteger(outlineColor) || outlineColor < 0 || outlineColor > 15) {
+        throw new Error("--outline-color must be an integer from 0 to 15")
+    }
+    if (new Set([grassColor, roadColor, outlineColor]).size !== 3) {
+        throw new Error("--grass-color, --road-color, and --outline-color must differ")
+    }
+    return { grassColor, roadColor, outlineColor }
+}
+
 function options(argv) {
-    const result = { size: 200, width: 4, simplify: 2, angles: 32, tileset: "detailed" }
+    const result = { size: 200, width: 4, simplify: 2, angles: 32,
+        tileset: "detailed", grassColor: 0, roadColor: 11, outlineColor: 12 }
     let input
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i]
@@ -40,9 +66,11 @@ function options(argv) {
             result.batch = true
             continue
         }
-        if (["--size", "--width", "--simplify", "--angles", "--tileset", "--output"].includes(arg)) {
+        if (["--size", "--width", "--simplify", "--angles", "--tileset", "--output",
+            "--grass-color", "--road-color", "--outline-color"].includes(arg)) {
             if (++i >= argv.length) throw new Error(`Missing value for ${arg}`)
-            result[arg.slice(2)] = argv[i]
+            const key = arg.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
+            result[key] = argv[i]
         } else if (arg.startsWith("-") || input) {
             throw new Error(`Unexpected argument: ${arg}`)
         } else input = arg
@@ -73,6 +101,15 @@ function options(argv) {
     if (result.tileset === "compact" && result.angles !== 16) {
         throw new Error("--tileset compact requires --angles 16")
     }
+    for (const key of ["grassColor", "roadColor"]) {
+        if (result[key] === "") throw new Error(`Invalid --${key.replace("Color", "")}-color`)
+        result[key] = Number(result[key])
+    }
+    if (result.tileset === "compact") {
+        if (result.outlineColor === "") throw new Error("Invalid --outline-color")
+        result.outlineColor = Number(result.outlineColor)
+    }
+    paletteColors(result)
     result.input = input
     return result
 }
@@ -1062,6 +1099,7 @@ function makeTilemap(svg, config) {
     if (config.tileset !== undefined && !["detailed", "compact"].includes(config.tileset)) {
         throw new Error("Tileset must be detailed or compact")
     }
+    const colors = paletteColors(config)
     const track = extractTrack(svg)
     const finish = extractFinish(svg, track)
     let minX = Infinity
@@ -1127,6 +1165,7 @@ function makeTilemap(svg, config) {
             finish: transformedFinish,
             roadWidth: config.width,
             tileset: config.tileset,
+            ...colors,
         }
     }
     if (config.tileset !== "compact") return render(0, 0)
@@ -1288,10 +1327,76 @@ function gateHex(map) {
     return data.toString("hex")
 }
 
+function colorizeTile(image, colors) {
+    return image.replaceAll(/[17f]/g, pixel =>
+        (pixel === "7" ? colors.grassColor :
+            pixel === "1" ? colors.roadColor : colors.outlineColor).toString(16))
+}
+
+const outlineOffsets = []
+for (let dy = -4; dy <= 4; dy++) {
+    for (let dx = -4; dx <= 4; dx++) {
+        if (dx * dx + dy * dy <= 16 && (dx || dy)) outlineOffsets.push([dx, dy])
+    }
+}
+
+function outlineMap(map) {
+    const { width, height } = map
+    const images = [...map.images]
+    const tiles = Uint8Array.from(map.tiles)
+    const indices = new Map(images.map((image, index) => [image, index]))
+    const hasRoad = images.map(image => image.includes("1"))
+    for (let ty = 0; ty < height; ty++) {
+        for (let tx = 0; tx < width; tx++) {
+            let nearRoad = false
+            for (let y = Math.max(0, ty - 1); y <= Math.min(height - 1, ty + 1); y++) {
+                for (let x = Math.max(0, tx - 1); x <= Math.min(width - 1, tx + 1); x++) {
+                    if (hasRoad[map.tiles[y * width + x]]) nearRoad = true
+                }
+            }
+            if (!nearRoad) continue
+            const index = ty * width + tx
+            const original = map.images[map.tiles[index]]
+            const rows = original.split("\n").map(row => row.split(""))
+            let outlined = false
+            for (let y = 0; y < 16; y++) {
+                for (let x = 0; x < 16; x++) {
+                    if (rows[y][x] !== "7") continue
+                    for (const [dx, dy] of outlineOffsets) {
+                        const px = tx * 16 + x + dx
+                        const py = ty * 16 + y + dy
+                        if (px < 0 || py < 0 || px >= width * 16 || py >= height * 16) continue
+                        const neighbor = map.tiles[Math.floor(py / 16) * width + Math.floor(px / 16)]
+                        if (map.images[neighbor][(py % 16) * 17 + px % 16] === "1") {
+                            // Keep the outline separate from road and grass until output coloring.
+                            rows[y][x] = "f"
+                            outlined = true
+                            break
+                        }
+                    }
+                }
+            }
+            if (!outlined) continue
+            const image = rows.map(row => row.join("")).join("\n")
+            if (!indices.has(image)) {
+                if (images.length === 256) {
+                    throw new Error("Outlined tileset needs more than 256 images; use --tileset compact")
+                }
+                indices.set(image, images.length)
+                images.push(image)
+            }
+            tiles[index] = indices.get(image)
+        }
+    }
+    return { ...map, images, tiles }
+}
+
 function formatTilemap(map) {
-    const hex = tilemapHex(map)
-    const images = map.images.map(image => `        img\`
-            ${image.replaceAll("\n", "\n            ")}
+    const outlined = map.tileset === "compact" ? outlineMap(map) : map
+    const hex = tilemapHex(outlined)
+    const colors = paletteColors(map)
+    const images = outlined.images.map(image => `        img\`
+            ${colorizeTile(image, colors).replaceAll("\n", "\n            ")}
         \``).join(",\n")
     return `tiles.setCurrentTilemap(tiles.createTilemap(
     hex\`${hex}\`,
@@ -1325,7 +1430,8 @@ const compactTileNames = [
     "roadHalfSouth", "roadHalfWest", "roadHalfNorth", "roadHalfEast",
 ]
 
-function jresImage(image) {
+function jresImage(image, colors) {
+    const pixels = colorizeTile(image, colors)
     const bytes = Buffer.alloc(8 + 16 * 8)
     bytes[0] = 0x87
     bytes[1] = 4
@@ -1333,7 +1439,7 @@ function jresImage(image) {
     bytes.writeUInt16LE(16, 4)
     for (let y = 0; y < 16; y++) {
         for (let x = 0; x < 16; x++) {
-            const color = Number.parseInt(image[y * 17 + x], 16)
+            const color = Number.parseInt(pixels[y * 17 + x], 16)
             bytes[8 + x * 8 + (y >> 1)] |= color << ((y & 1) * 4)
         }
     }
@@ -1350,11 +1456,17 @@ function withTrackContext(name, action) {
 
 function formatBatch(entries, compact = true) {
     if (!entries.length) throw new Error("No SVG files found in tracks/")
+    const colors = withTrackContext(entries[0].name, () => paletteColors(entries[0].map))
     const transparent = Array.from({ length: 16 }, () => "0".repeat(16)).join("\n")
     const images = [transparent]
     const imageIndices = new Map([[transparent, 0]])
     const usedNames = new Set()
-    const maps = entries.map(({ name, map }) => withTrackContext(name, () => {
+    const prepared = entries.map(({ name, map }) => withTrackContext(name, () => {
+        const trackColors = paletteColors(map)
+        if (trackColors.grassColor !== colors.grassColor || trackColors.roadColor !== colors.roadColor ||
+            trackColors.outlineColor !== colors.outlineColor) {
+            throw new Error("Batch tracks must use the same grass, road, and outline colors")
+        }
         const id = path.parse(name).name.replace(/[^a-zA-Z0-9_]+/g, "_")
         if (!/^[a-zA-Z_]/.test(id) || usedNames.has(id)) {
             throw new Error(`Invalid or duplicate track name: ${name}`)
@@ -1369,21 +1481,41 @@ function formatBatch(entries, compact = true) {
         if (images.length > 256) {
             throw new Error(`Shared tileset needs ${images.length} images (maximum 256); use --tileset compact`)
         }
-        const tiles = Uint8Array.from(map.tiles, index => {
-            return imageIndices.get(map.images[index])
-        })
         return { id, name: path.parse(name).name.replace(/[_-]+/g, " "),
-            file: name, map, hex: tilemapHex(map, tiles), gates: gateHex(map) }
+            file: name, map }
     }))
-    const names = images.map((image, i) =>
+    const baseCount = images.length
+    const maps = prepared.map(item => withTrackContext(item.file, () => {
+        const outlined = item.map.tileset === "compact" ? outlineMap(item.map) : item.map
+        for (const image of outlined.images) {
+            if (!imageIndices.has(image)) {
+                imageIndices.set(image, images.length)
+                images.push(image)
+            }
+        }
+        if (images.length > 256) {
+            throw new Error(`Shared outlined tileset needs ${images.length} images (maximum 256)`)
+        }
+        const tiles = Uint8Array.from(outlined.tiles, index => imageIndices.get(outlined.images[index]))
+        return { ...item, hex: tilemapHex(outlined, tiles), gates: gateHex(item.map) }
+    }))
+    const baseNames = images.slice(0, baseCount).map((image, i) =>
         i === 0 ? "transparency16" :
             compact ? compactTileNames[i - 1] :
                 i === 1 ? "grass" : i === 2 ? "road" : `roadEdge${i - 2}`)
+    const variants = new Map()
+    const names = images.map((image, i) => {
+        if (i < baseCount) return baseNames[i]
+        const base = baseNames[imageIndices.get(image.replaceAll("f", "7"))]
+        const count = (variants.get(base) || 0) + 1
+        variants.set(base, count)
+        return `${base}Outline${count}`
+    })
     const tileset = names.map(name => `myTiles.${name}`)
     const resources = {}
     images.forEach((image, i) => {
         resources[names[i]] = {
-            data: jresImage(image), mimeType: "image/x-mkcd-f4", tilemapTile: true,
+            data: jresImage(image, colors), mimeType: "image/x-mkcd-f4", tilemapTile: true,
             displayName: names[i].replace(/([a-z])([A-Z])/g, "$1 $2"),
         }
     })
