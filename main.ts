@@ -346,3 +346,5 @@ function drawSpeedometer(radius: number, x: number, y: number, speed: number, ma
         screen.drawTransparentImage(digits[digit], x - 8 + i * 6, y - 4);
     }
 }
+
+aiRacing.runActivity();

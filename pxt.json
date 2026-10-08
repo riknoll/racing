@@ -4,10 +4,19 @@
     "files": [
         "background.ts",
         "racer.ts",
+        "ai/track.ts",
+        "ai/geometry.g.ts",
+        "ai/driver.ts",
+        "ai/car.ts",
+        "ai/visualization.ts",
+        "ai/activity.ts",
+        "ai/entry.ts",
         "carImages.ts",
         "main.ts",
         "tilemap.g.ts",
-        "tilemap.g.jres"
+        "tilemap.g.jres",
+        "ai/docs/teach-driver.md",
+        "ai/docs/test-driver.md"
     ],
     "supportedTargets": [
         "arcade"
