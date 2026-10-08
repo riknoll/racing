@@ -21,7 +21,8 @@
         "arcade-math-utils": "github:riknoll/arcade-math-utils#master",
         "arcade-drawing-utils": "github:riknoll/arcade-drawing-utils#v0.1.1",
         "arcade-background-scroll": "github:microsoft/arcade-background-scroll#v0.1.2",
-        "arcade-timer-sprite": "github:riknoll/arcade-timer-sprite#v0.0.2"
+        "arcade-timer-sprite": "github:riknoll/arcade-timer-sprite#v0.0.3",
+        "arcade-fancy-text": "github:riknoll/arcade-fancy-text#v0.2.2"
     },
     "testDependencies": {}
 }

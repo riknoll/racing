@@ -10,6 +10,8 @@ namespace racing {
 
     export function startRace(track: Track) {
         let gates: Gate[];
+        let totalLaps = 3;
+
         switch (track) {
             case Track.Netherlands:
                 tiles.setCurrentTilemap(tilemap`netherlands`);
@@ -72,18 +74,36 @@ namespace racing {
         scroller.scrollBackgroundWithCamera(scroller.CameraScrollMode.BothDirections)
 
         const timer = racing.createTimer("compact");
-        timer.setRunning(true);
         timer.top = 0;
 
+        const lapTimes: number[] = [];
+
         game.onUpdate(() => {
+            const currentLap = player.currentLap;
             player.checkGateOverlaps(gates);
+
+            if (player.currentLap !== currentLap) {
+                lapTimes.push(timer.getElapsedTime());
+                timer.setElapsedTime(0);
+                createLapTime(lapTimes.length - 1, totalLaps, lapTimes[lapTimes.length - 1]);
+
+                if (player.currentLap === totalLaps) {
+                    player.controlEnabled = false;
+                    player.controlState = 0;
+                    timer.setRunning(false);
+                    let totalTime = 0;
+                    for (let i = 0; i < lapTimes.length; i++) {
+                        totalTime += lapTimes[i];
+                    }
+                    timer.setElapsedTime(totalTime);
+                }
+            }
+
             scene.centerCameraAt(
                 player.x + 30 * Math.cos(player.heading),
                 player.y + 30 * Math.sin(player.heading)
-            )
-        })
-
-        player.controlEnabled = true;
+            );
+        });
 
         createMinimapRenderable(gates, player);
 
@@ -98,13 +118,29 @@ namespace racing {
                 2
             );
 
-
+            racing.drawLapIndicator(135, 0, Math.min(player.currentLap, totalLaps), totalLaps);
             racing.drawSpeedometer(19, 20, 99, player.speed, player.stats.topSpeed);
-        })
+        });
+
+
+        const countdownSprite = fancyText.create("3", 0, 12, fancyText.rounded_large);
+        countdownSprite.setFlag(SpriteFlag.RelativeToCamera, true);
+        countdownSprite.setFlag(SpriteFlag.Ghost, true);
+
+        control.runInBackground(() => {
+            for (let i = 3; i > 0; i--) {
+                countdownSprite.setText(i.toString());
+                countdownSprite.x = screen.width / 2;
+                countdownSprite.y = screen.height / 2;
+                pause(1000);
+            }
+            countdownSprite.setText("GO!");
+            countdownSprite.x = screen.width / 2;
+            countdownSprite.y = screen.height / 2;
+            timer.setRunning(true);
+            player.controlEnabled = true;
+            pause(1000);
+            countdownSprite.destroy();
+        });
     }
-
-
-
-
-
 }

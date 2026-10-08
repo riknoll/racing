@@ -82,6 +82,7 @@ namespace racing {
         speed = 0;
         controlState = 0;
         currentGateIndex = 0;
+        currentLap = 0;
 
         controlEnabled = false;
 
@@ -242,6 +243,8 @@ namespace racing {
             this.corners[3].x = this.left;
             this.corners[3].y = this.bottom;
 
+            const prevIndex = this.currentGateIndex;
+
             for (let gateIndex = 0; gateIndex < 2; gateIndex++) {
                 const gate = gates[(this.currentGateIndex + 1 + gateIndex) % gates.length];
                 const gateMidpoint = gateCenter(gate);
@@ -263,6 +266,10 @@ namespace racing {
                     this.currentGateIndex = (this.currentGateIndex + 1 + gateIndex) % gates.length;
                     break;
                 }
+            }
+
+            if (prevIndex > this.currentGateIndex) {
+                this.currentLap++;
             }
         }
     }

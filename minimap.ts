@@ -1,11 +1,10 @@
 namespace racing {
     export function createMinimapRenderable(gates: Gate[], player: Car) {
-        const points = getMinimapPoints(gates, 0.018, 0, 0);
+        const points = getMinimapPoints(gates, 0.018, 1, 1);
+
+        const offset = points.pop();
 
         return scene.createRenderable(10, (target, camera) => {
-            let playerX = 0;
-            let playerY = 0;
-
             for (let i = 0; i < points.length; i++) {
                 const point = points[i];
                 const next = points[(i + 1) % points.length];
@@ -14,20 +13,21 @@ namespace racing {
                     target,
                     point,
                     next,
-                    3,
+                    10,
                 );
-                if (i === player.currentGateIndex) {
-                    const progress = distance(gateCenter(gates[i]), player) / distance(gateCenter(gates[i]), gateCenter(gates[(i + 1) % gates.length]));
-                    playerX = point.x + progress * (next.x - point.x);
-                    playerY = point.y + progress * (next.y - point.y);
-                }
             }
+            screen.fillRect(points[0].x - 1, points[0].y - 1, 3, 3, 2);
+
+            const playerX = player.x * 0.018 + offset.x;
+            const playerY = player.y * 0.018 + offset.y;
+
             screen.fillCircle(
                 playerX,
                 playerY,
                 2,
                 1
             );
+
         });
     }
 
@@ -55,6 +55,11 @@ namespace racing {
                 top + (center.y - minY) * scale
             ));
         }
+
+        points.push(new util.Point(
+            left - minX * scale,
+            top - minY * scale
+        ));
 
         return points;
     }

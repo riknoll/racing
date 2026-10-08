@@ -1,3 +1,3 @@
 
 
-racing.startRace(racing.Track.Netherlands);
+racing.startRace(racing.Track.USA);
