@@ -128,55 +128,55 @@ namespace racing {
         1 . 1
         1 . 1
         1 1 1
-        `,img`
+        `, img`
         . 1 .
         1 1 .
         . 1 .
         . 1 .
         1 1 1
-        `,img`
+        `, img`
         1 1 1
         . . 1
         1 1 1
         1 . .
         1 1 1
-        `,img`
+        `, img`
         1 1 1
         . . 1
         . 1 1
         . . 1
         1 1 1
-        `,img`
+        `, img`
         1 . 1
         1 . 1
         1 1 1
         . . 1
         . . 1
-        `,img`
+        `, img`
         1 1 1
         1 . .
         1 1 1
         . . 1
         1 1 1
-        `,img`
+        `, img`
         1 1 1
         1 . .
         1 1 1
         1 . 1
         1 1 1
-        `,img`
+        `, img`
         1 1 1
         . . 1
         . . 1
         . 1 .
         . 1 .
-        `,img`
+        `, img`
         1 1 1
         1 . 1
         1 1 1
         1 . 1
         1 1 1
-        `,img`
+        `, img`
         1 1 1
         1 . 1
         1 1 1
@@ -193,6 +193,29 @@ namespace racing {
     .
     .
     1
+    `;
+
+    export const finishLine = img`
+        ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+        ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+        ffffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ff
+        ffffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ff
+        ffffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ff
+        ffffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ff
+        ffffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ff
+        ffffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ff
+        ffffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ff
+        ffffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ff
+        ff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffffff
+        ff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffffff
+        ff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffffff
+        ff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffffff
+        ff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffffff
+        ff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffffff
+        ff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffffff
+        ff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffff11111111ffffffffff
+        ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+        ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
     `;
 
     export function drawSpeedometer(radius: number, x: number, y: number, speed: number, maxSpeed: number) {

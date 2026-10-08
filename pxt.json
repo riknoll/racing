@@ -2,9 +2,12 @@
     "name": "my-project",
     "version": "0.0.0",
     "files": [
+        "util.ts",
         "ui.ts",
+        "minimap.ts",
         "background.ts",
         "racer.ts",
+        "race.ts",
         "carImages.ts",
         "main.ts",
         "tilemap.g.ts",

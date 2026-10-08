@@ -81,16 +81,24 @@ namespace racing {
         heading = 0;
         speed = 0;
         controlState = 0;
-
         currentGateIndex = 0;
 
         controlEnabled = false;
+
+        corners: util.Point[] = [];
 
         constructor(
             public readonly stats: RacerStats,
             public readonly frames: Image[],
         ) {
             super(frames[0]);
+
+            this.corners = [
+                new util.Point(this.left, this.top),
+                new util.Point(this.right, this.top),
+                new util.Point(this.right, this.bottom),
+                new util.Point(this.left, this.bottom)
+            ];
         }
 
         update(deltaTimeMillis: number) {
@@ -222,6 +230,40 @@ namespace racing {
                 return true;
             }
             return false;
+        }
+
+        checkGateOverlaps(gates: Gate[]) {
+            this.corners[0].x = this.left;
+            this.corners[0].y = this.top;
+            this.corners[1].x = this.right;
+            this.corners[1].y = this.top;
+            this.corners[2].x = this.right;
+            this.corners[2].y = this.bottom;
+            this.corners[3].x = this.left;
+            this.corners[3].y = this.bottom;
+
+            for (let gateIndex = 0; gateIndex < 2; gateIndex++) {
+                const gate = gates[(this.currentGateIndex + 1 + gateIndex) % gates.length];
+                const gateMidpoint = gateCenter(gate);
+                let crossing = gateMidpoint.x >= this.left && gateMidpoint.x <= this.right &&
+                    gateMidpoint.y >= this.top && gateMidpoint.y <= this.bottom;
+
+                for (let i = 0; i < this.corners.length; i++) {
+                    const corner = this.corners[i];
+                    const next = this.corners[(i + 1) % this.corners.length];
+
+                    if (mathUtils.lineIntersectsLine(
+                        corner, next, gate.start, gate.end
+                    )) {
+                        crossing = true;
+                        break;
+                    }
+                }
+                if (crossing) {
+                    this.currentGateIndex = (this.currentGateIndex + 1 + gateIndex) % gates.length;
+                    break;
+                }
+            }
         }
     }
 
