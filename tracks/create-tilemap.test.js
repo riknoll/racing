@@ -227,14 +227,14 @@ test("encodes valid dimensions, cells, tileset, and wall layer for MakeCode", ()
     const gates = makeGates(map)
     const gateHex = source.match(/trackWaypoints = hex`([0-9a-f]+)`/)[1]
     const gateData = Buffer.from(gateHex, "hex")
-    assert.equal(gateData.length, gates.length * 8)
+    assert.equal(gateData.length, gates.length * 16)
     for (let i = 0; i < gates.length; i++) {
-        assert.equal(gateData.readUInt16LE(i * 8), gates[i].start.x)
-        assert.equal(gateData.readUInt16LE(i * 8 + 2), gates[i].start.y)
-        assert.equal(gateData.readUInt16LE(i * 8 + 4), gates[i].end.x)
-        assert.equal(gateData.readUInt16LE(i * 8 + 6), gates[i].end.y)
+        assert.equal(gateData.readInt32LE(i * 16), gates[i].start.x)
+        assert.equal(gateData.readInt32LE(i * 16 + 4), gates[i].start.y)
+        assert.equal(gateData.readInt32LE(i * 16 + 8), gates[i].end.x)
+        assert.equal(gateData.readInt32LE(i * 16 + 12), gates[i].end.y)
     }
-    assert.match(source, /Each gate is start X\/Y, end X\/Y as UInt16LE pixels/)
+    assert.match(source, /Each gate is start X\/Y, end X\/Y as Int32LE pixels/)
     assert.match(source, /\/\/% whenUsed\s+const trackWaypoints = hex`/)
 })
 
@@ -685,18 +685,25 @@ test("compact waypoints contain every generated polyline vertex in finish-line o
     }
 })
 
-test("widened gates bracket turns without crossing into neighboring road segments", () => {
+test("wide gates bracket turns and reach off-road without clipping to the map", () => {
     for (const name of ["monaco", "usa"]) {
         for (const width of [1, 4]) {
             const svg = fs.readFileSync(path.join(__dirname, `${name}.svg`), "utf8")
             const map = makeTilemap(svg, { size: 200, width, simplify: 2, tileset: "compact" })
             const vertices = makeWaypoints(map)
             const gates = makeGates(map)
-            assert.equal(gates.length, map.points.length * 2)
-            assert.ok(gates.filter(gate => Math.hypot(
+            let crossedOtherRoad = false
+            assert.equal(gates.length, map.points.length * 2 + 1)
+            assert.ok(gates.every(gate => Math.hypot(
                 gate.end.x - gate.start.x, gate.end.y - gate.start.y
-            ) >= width * 16 * 2.9).length > gates.length / 2,
-            `${name} should widen most gates to about triple the road width`)
+            ) >= width * 16 * 5.9),
+            `${name} should widen every gate to about six times the road width`)
+            assert.ok(gates.some(gate => [gate.start, gate.end].some(point =>
+                point.x < 0 || point.y < 0)),
+            `${name} must allow gates past the top or left map edge`)
+            assert.ok(gates.some(gate => [gate.start, gate.end].some(point =>
+                point.x >= map.width * 16 || point.y >= map.height * 16)),
+            `${name} must allow gates past the right or bottom map edge`)
             const roadAt = (x, y) => {
                 const px = Math.floor(x)
                 const py = Math.floor(y)
@@ -704,13 +711,31 @@ test("widened gates bracket turns without crossing into neighboring road segment
                 const tile = map.tiles[Math.floor(py / 16) * map.width + Math.floor(px / 16)]
                 return map.images[tile][(py % 16) * 17 + px % 16] === "1"
             }
+            const last = vertices[vertices.length - 1]
+            const first = vertices[0]
+            const dx = first.x - last.x
+            const dy = first.y - last.y
+            const length = Math.hypot(dx, dy)
+            const t = Math.max(0, Math.min(1,
+                ((map.finish.x * 16 - last.x) * dx + (map.finish.y * 16 - last.y) * dy) /
+                (length * length)))
+            const finishCenter = {
+                x: (gates[0].start.x + gates[0].end.x) / 2,
+                y: (gates[0].start.y + gates[0].end.y) / 2,
+            }
+            assert.ok(Math.hypot(
+                finishCenter.x - (last.x + t * dx), finishCenter.y - (last.y + t * dy)
+            ) < 2, `${name} finish gate must cross the projected start/finish line`)
+            assert.ok(roadAt(finishCenter.x, finishCenter.y),
+                `${name} finish gate center must be on the road`)
             for (let i = 0; i < vertices.length; i++) {
                 const prev = vertices[(i + vertices.length - 1) % vertices.length]
                 const turn = vertices[i]
                 const next = vertices[(i + 1) % vertices.length]
                 for (const [gate, a, b] of [
-                    [gates[i * 2], prev, turn],
-                    [gates[i * 2 + 1], turn, next],
+                    ...(i === 0 ? [[gates[0], last, first]] : []),
+                    [gates[i * 2 + 1], prev, turn],
+                    [gates[i * 2 + 2], turn, next],
                 ]) {
                     const center = { x: (gate.start.x + gate.end.x) / 2,
                         y: (gate.start.y + gate.end.y) / 2 }
@@ -738,27 +763,47 @@ test("widened gates bracket turns without crossing into neighboring road segment
                             assert.ok(distance <= radius + 1,
                                 `${name} gate ${i} misses painted road ${distance}px from its center`)
                         }
-                        grass = 0
-                        let leftRoad = false
-                        for (let distance = 1; distance < radius; distance++) {
+                        assert.ok(radius >= width * 8 * 5.9,
+                            `${name} gate ${i} must extend well beyond the road`)
+                        let offRoad = 0
+                        for (let distance = 0; distance < radius; distance++) {
                             if (roadAt(center.x + normal.x * distance * side,
                                 center.y + normal.y * distance * side)) {
-                                assert.equal(leftRoad, false,
-                                    `${name} gate ${i} crosses into another road segment`)
-                                grass = 0
-                            } else if (++grass >= 2) {
-                                leftRoad = true
+                                if (offRoad >= 2) crossedOtherRoad = true
+                            } else {
+                                offRoad++
                             }
                         }
-                        assert.ok(radius <= 3 * (width * 8 + 16) + 1,
-                            `${name} gate ${i} extends beyond triple width`)
                     }
                 }
                 assert.ok(Math.hypot(
-                    (gates[2 * i].start.x + gates[2 * i].end.x) / 2 - turn.x,
-                    (gates[2 * i].start.y + gates[2 * i].end.y) / 2 - turn.y
+                    (gates[2 * i + 1].start.x + gates[2 * i + 1].end.x) / 2 - turn.x,
+                    (gates[2 * i + 1].start.y + gates[2 * i + 1].end.y) / 2 - turn.y
                 ) <= width * 8 + 13)
             }
+            if (width === 4) {
+                assert.ok(crossedOtherRoad, `${name} gates may cross neighboring road segments`)
+            }
+        }
+    }
+})
+
+test("the first gate crosses the finish marker in both tileset modes", () => {
+    for (const name of ["australia", "greatbritain", "italy", "monaco", "netherlands", "usa"]) {
+        for (const tileset of ["compact", "detailed"]) {
+            const svg = fs.readFileSync(path.join(__dirname, `${name}.svg`), "utf8")
+            const map = makeTilemap(svg, { size: 200, width: 4, simplify: 2, tileset })
+            const { start, end } = makeGates(map)[0]
+            const finishX = map.finish.x * 16
+            const finishY = map.finish.y * 16
+            const dx = end.x - start.x
+            const dy = end.y - start.y
+            const length = Math.hypot(dx, dy)
+            const t = ((finishX - start.x) * dx + (finishY - start.y) * dy) /
+                (length * length)
+            assert.ok(t >= 0 && t <= 1, `${name} ${tileset}: gate spans finish marker`)
+            assert.ok(Math.abs((finishX - start.x) * dy - (finishY - start.y) * dx) /
+                length < 1, `${name} ${tileset}: gate crosses finish marker`)
         }
     }
 })
@@ -902,14 +947,14 @@ test("batch resources share named tiles and preserve both maps and their gates",
         const route = ts.match(new RegExp(`//% whenUsed\\s+export const ${id} = hex\`([0-9a-f]+)\``))
         assert.ok(route)
         const gates = makeGates(map)
-        assert.equal(gates.length, map.points.length * 2)
-        assert.equal(route[1].length, gates.length * 16)
+        assert.equal(gates.length, map.points.length * 2 + 1)
+        assert.equal(route[1].length, gates.length * 32)
         const values = Buffer.from(route[1], "hex")
         for (let i = 0; i < gates.length; i++) {
-            assert.equal(values.readUInt16LE(i * 8), gates[i].start.x)
-            assert.equal(values.readUInt16LE(i * 8 + 2), gates[i].start.y)
-            assert.equal(values.readUInt16LE(i * 8 + 4), gates[i].end.x)
-            assert.equal(values.readUInt16LE(i * 8 + 6), gates[i].end.y)
+            assert.equal(values.readInt32LE(i * 16), gates[i].start.x)
+            assert.equal(values.readInt32LE(i * 16 + 4), gates[i].start.y)
+            assert.equal(values.readInt32LE(i * 16 + 8), gates[i].end.x)
+            assert.equal(values.readInt32LE(i * 16 + 12), gates[i].end.y)
         }
     }
     const image = Buffer.from(resources.roadDiagonalSouthEast.data, "base64")
