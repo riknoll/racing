@@ -29,11 +29,10 @@ In compact mode, --outline-color must also differ from both colors. Grass defaul
 to transparent (0), road to 11, and the compact outline to 12. Detailed mode
 ignores --outline-color and does not add an outline.
 The SVG must mark the finish with red and yellow paths. The output includes
-trackWaypoints: pairs of gate endpoints (start X/Y, end X/Y as UInt16LE pixels),
-one gate before and one after each generated turn in the yellow-to-red
-direction. Gates are up to three times the road width, stopping short of
-neighboring road segments or the map edge. The first gate precedes the first
-turn after the finish.`
+trackWaypoints: pairs of gate endpoints (start X/Y, end X/Y as Int32LE pixels).
+The first gate crosses the start/finish line, followed by one gate before and
+one after each generated turn in the yellow-to-red direction. Gates span about
+six times the road width and may cross other roads or extend beyond any map edge.`
 
 function paletteColors(config) {
     const grassColor = config.grassColor ?? 0
@@ -1264,42 +1263,29 @@ function makeGates(map) {
             return limit
         }
         const roadRadius = Math.max(extent(-1), extent(1))
-        const desiredRadius = roadRadius * 3
-        const safeRadius = side => {
-            let grass = 0
-            let leftRoad = false
-            for (let distance = 1; distance <= desiredRadius; distance++) {
-                const x = center.x + side * normal.x * distance
-                const y = center.y + side * normal.y * distance
-                if (x < 0.5 || y < 0.5 ||
-                    x > map.width * 16 - 1.5 || y > map.height * 16 - 1.5) {
-                    return distance - 1
-                }
-                if (roadAt(x, y)) {
-                    if (leftRoad) return distance - 1
-                    grass = 0
-                } else if (++grass >= 2) {
-                    leftRoad = true
-                }
-            }
-            return desiredRadius
-        }
-        const safeLeft = safeRadius(-1)
-        const safeRight = safeRadius(1)
-        const sharedRadius = Math.min(desiredRadius, safeLeft, safeRight)
+        const radius = Math.max(roadRadius, map.roadWidth * 8) * 6
         const endpoint = side => {
-            const safe = side < 0 ? safeLeft : safeRight
-            const distance = Math.max(sharedRadius, Math.min(roadRadius, safe)) * side
-            const x = Math.round(center.x + normal.x * distance)
-            const y = Math.round(center.y + normal.y * distance)
-            if (x < 0 || x > 65535 || y < 0 || y > 65535) {
-                throw new Error("Gate pixel coordinates exceed UInt16; reduce --size")
+            const x = Math.round(center.x + normal.x * radius * side)
+            const y = Math.round(center.y + normal.y * radius * side)
+            if (!Number.isInteger(x) || x < -2147483648 || x > 2147483647 ||
+                !Number.isInteger(y) || y < -2147483648 || y > 2147483647) {
+                throw new Error("Gate pixel coordinates exceed Int32; reduce --size or --width")
             }
             return { x, y }
         }
         return { start: endpoint(-1), end: endpoint(1) }
     }
-    const gates = []
+    const last = vertices[vertices.length - 1]
+    const first = vertices[0]
+    const dx = first.x - last.x
+    const dy = first.y - last.y
+    const length = Math.hypot(dx, dy)
+    if (!length) throw new Error("Cannot generate a finish gate on a zero-length road segment")
+    const finishX = map.finish.x * 16
+    const finishY = map.finish.y * 16
+    const finishDistance = Math.max(0, Math.min(length,
+        ((finishX - last.x) * dx + (finishY - last.y) * dy) / length))
+    const gates = [gateOnSegment(last, first, finishDistance, 0)]
     for (let i = 0; i < vertices.length; i++) {
         const previous = vertices[(i + vertices.length - 1) % vertices.length]
         const turn = vertices[i]
@@ -1317,12 +1303,12 @@ function makeGates(map) {
 
 function gateHex(map) {
     const gates = makeGates(map)
-    const data = Buffer.alloc(gates.length * 8)
+    const data = Buffer.alloc(gates.length * 16)
     for (let i = 0; i < gates.length; i++) {
-        data.writeUInt16LE(gates[i].start.x, i * 8)
-        data.writeUInt16LE(gates[i].start.y, i * 8 + 2)
-        data.writeUInt16LE(gates[i].end.x, i * 8 + 4)
-        data.writeUInt16LE(gates[i].end.y, i * 8 + 6)
+        data.writeInt32LE(gates[i].start.x, i * 16)
+        data.writeInt32LE(gates[i].start.y, i * 16 + 4)
+        data.writeInt32LE(gates[i].end.x, i * 16 + 8)
+        data.writeInt32LE(gates[i].end.y, i * 16 + 12)
     }
     return data.toString("hex")
 }
@@ -1409,7 +1395,8 @@ ${images},
     TileScale.Sixteen
 ))
 
-// Each gate is start X/Y, end X/Y as UInt16LE pixels; wrap after the last gate.
+// Each gate is start X/Y, end X/Y as Int32LE pixels; gate 0 crosses the finish.
+// Wrap after the last gate.
 //% whenUsed
 const trackWaypoints = hex\`${gateHex(map)}\`
 `
@@ -1567,7 +1554,8 @@ ${tileFactories}
     });
 }
 
-// Each gate is start X/Y, end X/Y as UInt16LE pixels; wrap after the last gate.
+// Each gate is start X/Y, end X/Y as Int32LE pixels; gate 0 crosses the finish.
+// Wrap after the last gate.
 namespace trackWaypoints {
 ${routes}
 }

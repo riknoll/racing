@@ -2,21 +2,16 @@
     "name": "my-project",
     "version": "0.0.0",
     "files": [
+        "util.ts",
+        "ui.ts",
+        "minimap.ts",
         "background.ts",
         "racer.ts",
-        "ai/track.ts",
-        "ai/geometry.g.ts",
-        "ai/driver.ts",
-        "ai/car.ts",
-        "ai/visualization.ts",
-        "ai/activity.ts",
-        "ai/entry.ts",
+        "race.ts",
         "carImages.ts",
         "main.ts",
         "tilemap.g.ts",
-        "tilemap.g.jres",
-        "ai/docs/teach-driver.md",
-        "ai/docs/test-driver.md"
+        "tilemap.g.jres"
     ],
     "supportedTargets": [
         "arcade"
@@ -25,7 +20,9 @@
         "device": "*",
         "arcade-math-utils": "github:riknoll/arcade-math-utils#master",
         "arcade-drawing-utils": "github:riknoll/arcade-drawing-utils#v0.1.1",
-        "arcade-background-scroll": "github:microsoft/arcade-background-scroll#v0.1.2"
+        "arcade-background-scroll": "github:microsoft/arcade-background-scroll#v0.1.2",
+        "arcade-timer-sprite": "github:riknoll/arcade-timer-sprite#v0.0.3",
+        "arcade-fancy-text": "github:riknoll/arcade-fancy-text#v0.2.2"
     },
     "testDependencies": {}
 }
