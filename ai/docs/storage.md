@@ -87,11 +87,8 @@ wide excursion reduces offset precision for all samples; the chart and nearest
 neighbor model still receive every example.
 
 Quantization can change the nearest neighbors or a close vote. It is **not**
-a promise of identical controls or success for every taught bot. The focused
-tests check numerical bounds and complete a Monaco course before and after
-saving with the actual learned Driver, Track, and car physics. Their road-contact
-fixture uses centerline distance rather than the rendered tilemap; browser and
-physical-device behavior still need integration testing.
+a promise of identical controls or success for every taught bot. Try a loaded
+bot on its intended tracks before relying on its learned driving.
 
 ## Binary format
 
@@ -174,8 +171,8 @@ setting cost = key cost + value cost
 
 Each bot key costs 14 bytes. A best-case full model therefore costs
 **3,258 encoded bytes**, while a worst-case full model costs **25,646** and cannot
-fit even by itself. Two typical full-lap models fit in the measured fixture below,
-but two arbitrary full models are **not guaranteed**. Budget for system
+fit even by itself. Two arbitrary full models are **not guaranteed** to fit.
+Budget for system
 keys and all unrelated user settings too; show "storage full" rather than
 discarding examples when the complete model cannot fit.
 
@@ -193,60 +190,10 @@ write fails. This codec intentionally bypasses it with the existing returning
 native/simulator shim `settings::_set`. Quota preflight rejects oversized saves
 before writing; a nonzero shim result throws explicitly without clearing,
 removing, or retrying settings. The previous bot, other slots, and unrelated
-values remain untouched on the tested failure paths.
+values remain untouched if writing fails.
 
 Hardware's default 32 KB settings region uses two flash banks, with filesystem
 and garbage-collection overhead; actual usable space varies by board. This
 encoded preflight is a conservative shared policy, **not** a hardware free-space
 query or a guarantee that a native write succeeds. Native write errors must
 still be shown to the learner.
-
-## Focused tests
-
-From the racing project root:
-
-```sh
-node --test ai/tests/storage.test.js
-```
-
-The tests compile the codec into the existing test host, with a MakeCode-style
-Buffer fixture and a returning settings shim. They cover all actions, exact
-counts, unchanged quantization, all eight sparse pair masks, signed delta limits,
-canonical absolute escapes, truncated sparse payloads, overflow/underflow in
-every sensor, corrupt records, full 2,400-example models, independent slots,
-replacement accounting, the reserved quota boundary, and safe quota/native
-failures. Two complete Monaco lessons are stored together with system and
-unrelated settings; both loaded models then complete the course with unchanged
-sample counts. All course indices 0-6 are checked through encode/decode and
-write/read, with out-of-range saved indices rejected. The Monaco test prints
-its actual sample
-count, raw/encoded size, compression mix, and before/after lap measurements.
-
-### Representative measurement
-
-Two separately recorded full lessons with the current Monaco geometry,
-upstream car stats, and the same deterministic test demonstrator produced:
-
-| Measurement | Result |
-| --- | --- |
-| Retained examples | 1,490 of 1,490 in **each** model |
-| Raw Buffer | 5,837 bytes per model |
-| Slot cost including key and Base64 | 7,798 encoded bytes per model |
-| Two separate bot slots | 15,596 encoded bytes |
-| System settings (`#run`, `#scope`) | 46 encoded bytes |
-| Unrelated user setting (`sound`) | 11 encoded bytes |
-| Total measured settings usage | **15,653 of 16,384 encoded bytes** |
-| Reserved / additional available capacity | 256 / 475 encoded bytes |
-| Delta / absolute records | 1,108 / 382 |
-| 1 / 2 / 3 / 4 / 8-byte records per model | 0 / 567 / 541 / 0 / 382 |
-| Offset scale | 1 |
-| Unsaved learned-driver lap | 94,800 ms; 0 ms off-road |
-| Each saved, loaded learned-driver lap | 104,200 ms; 600 ms off-road |
-
-No samples or quantized sensor information were removed. The tests compare
-restored sensors against the original quantization **exactly**, not just against
-a relaxed numerical tolerance. Attempts to use a third slot are rejected without
-changing either existing bot or the unrelated settings.
-
-These are fixture results, not a general guarantee about a learner's model,
-system-setting size, rendered tilemap, or physical device.

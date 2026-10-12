@@ -47,7 +47,7 @@ Learning and visualization live in [AI files](./), under `aiRacing`. The general
 [car](../racer.ts) keeps its original physics; its only AI integration change is
 exporting the existing control flags. The [block API](../api.ts) starts the menu
 with `racing.startGame()`, or starts a selected race with `racing.raceOnTrack()`.
-The [test launcher](../main.ts) is included only when building this project
+The [standalone launcher](../main.ts) is included only when building this project
 directly, not when importing it as an extension. The starting menu cannot be
 dismissed with B; there is no direct-USA fallback. Back still returns from track,
 lap, and bot selectors. Racing, training, and watching all use the same
@@ -62,17 +62,13 @@ checkpoints. The added AI generator scripts and their source SVG are not include
 or needed to build the extension. The original track generator and SVG sources
 remain unchanged.
 
-## Development
+## Building
 
 ```sh
 makecode build --java-script
-node --test ai/tests/*.test.js
-node --test tracks/create-tilemap.test.js
 ```
 
-Run these commands from the project root.
-The `ai/tests/` suite is local-only and ignored by Git; its test command requires
-that local folder. The original track-generator tests remain tracked.
+Run this command from the project root.
 
 For a standalone learner project, the lesson can also be started with just:
 
@@ -80,28 +76,3 @@ For a standalone learner project, the lesson can also be started with just:
 aiRacing.teachDriver()
 aiRacing.testDriver()
 ```
-
-## Fast menu checks
-
-The constants at the top of [main.ts](../main.ts) can select menus automatically:
-
-```typescript
-const MENU_TEST_SEQUENCE = ["Race", "Monaco", "2 laps"]
-const MENU_TEST_REPEAT = false
-const MENU_TEST_SKIP_PROMPTS = true
-```
-
-Exact menu labels are case-insensitive. `"Bot 1"` matches that slot even when its
-course description changes. `"Back"` cancels a selector; `"manual"` hands one
-menu to the user. When a non-repeating sequence ends, normal interaction resumes.
-Invalid/ambiguous choices report an error rather than silently choosing a default.
-
-View example: `["View AI", "Bot 1", "Pedals", "Continue", "Back"]`.
-Watch example: `["View AI", "Bot 1", "Continue", "Watch a lap", "Continue", "Back"]`.
-Other-track example: `["View AI", "Bot 1", "Continue", "Watch another track", "Monaco", "Continue", "Back"]`
-(for a bot trained on a track other than Monaco).
-The final Back in these examples exits the trained bot's action menu.
-Training example: `["Train AI", "Bot 1", "Test Track", "3 laps", "Continue"]`.
-The final `"Continue"` exits the memory chart, not an exercise review.
-Prompt skipping bypasses descriptions/start waits/countdowns,
-not driving or the menu sequence; it does not add a scripted racer.

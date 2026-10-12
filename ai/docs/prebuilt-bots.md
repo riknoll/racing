@@ -11,8 +11,7 @@ from the trained bots' settings, not scripts or waypoint replays.
 
 Cautious was taught clean laps with slower corners. Aggressive was taught a
 late corner overshoot, braking, backing up before the corner, and a slow forward
-turn. Its verified autonomous Test Track lap took about 97 seconds and included
-six reverse maneuvers. Aggressive describes its driving style, not a promise of
+turn. Aggressive describes its driving style, not a promise of
 a faster lap: recovering from mistakes costs time.
 
 ## Loading a model
@@ -36,6 +35,3 @@ The buffers keep every saved sample, its exact controls and terrain flag, and
 the sensor quantization already present in settings. Exporting adds no further
 quantization or sampling. Both models use Test Track course index 6; they can
 be tried on other tracks, but performance there is not guaranteed.
-
-The storage tests verify their SHA-256 hashes, checksums, metadata, action counts,
-byte-identical re-encoding, and independent decoded drivers.

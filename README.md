@@ -1,6 +1,6 @@
 F1 track SVGs taken from https://github.com/f1laps/f1-track-vectors/tree/981ef8e7bc9cb98380602f65f9b7b7f2ba0fe5d9. See LICENSE in that repo for usage details.
 
-See [AI racing](ai/README.md) for the added teaching activity and development checks.
+See [AI racing](ai/README.md) for the added teaching activity.
 
 ## Blocks
 
@@ -15,5 +15,3 @@ game. A learner's program can start with just:
 ```blocks
 racing.startGame()
 ```
-
-The AI JavaScript tests under `ai/tests/` are kept locally and ignored by Git.
