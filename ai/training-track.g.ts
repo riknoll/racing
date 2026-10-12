@@ -1,5 +1,4 @@
-// Auto-generated from the hand-designed training-track.svg.
-// Regenerate with node ai\generate-training-track.js.
+// Self-contained assets for the hand-designed Test Track.
 // Transparent grass (0), road (11) matching myTiles.road, and the four-pixel outline (12).
 namespace trainingTiles {
     const tile0: Image = image.ofBuffer(hex`87041000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000`);

@@ -28,10 +28,6 @@ Training replaces only the chosen slot. Saving uses the
 model. If settings are full, the model remains available for the session and
 previously saved bots are unchanged.
 
-The geometry comes from [training-track.svg](../training-track.svg). Its generated
-tilemap and checkpoint buffers stay isolated from the original race assets.
-Regenerate it from the project root with:
-
-```sh
-node ai/generate-training-track.js
-```
+The ready-to-use [Test Track assets](../training-track.g.ts) include the tilemap,
+centerline, and checkpoint buffers. They stay isolated from the original race
+assets and do not require generation when building the extension.

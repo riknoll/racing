@@ -56,25 +56,23 @@ lap, and bot selectors. Racing, training, and watching all use the same
 lap timer, lap-time panels, and forward-looking camera. AI-specific information
 does not replace these instruments or add a full-width driving header.
 
-The added [metadata generator](generate-geometry.js) produces
-[geometry.g.ts](geometry.g.ts) without modifying the original track generator,
-maps, checkpoints, or car artwork.
+The extension includes the ready-to-use [race geometry](geometry.g.ts),
+[Test Track assets](training-track.g.ts), and original race tilemaps and
+checkpoints. The added AI generator scripts and their source SVG are not included
+or needed to build the extension. The original track generator and SVG sources
+remain unchanged.
 
 ## Development
 
 ```sh
 makecode build --java-script
-node ai/generate-geometry.js
-node ai/generate-training-track.js
 node --test ai/tests/*.test.js
 node --test tracks/create-tilemap.test.js
 ```
 
-Run these commands from the project root. The AI metadata generator checks the
-original track gates before writing its file. If the upstream track generation
-settings change, update its settings rather than editing generated coordinates.
+Run these commands from the project root.
 The `ai/tests/` suite is local-only and ignored by Git; its test command requires
-that local folder. The track-generator tests remain tracked.
+that local folder. The original track-generator tests remain tracked.
 
 For a standalone learner project, the lesson can also be started with just:
 
