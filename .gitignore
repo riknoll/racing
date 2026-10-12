@@ -106,3 +106,5 @@ dist
 pxt_modules/
 
 built/
+
+ai/tests/*

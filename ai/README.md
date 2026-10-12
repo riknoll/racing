@@ -45,8 +45,10 @@ Learning and visualization live in [AI files](./), under `aiRacing`. The general
 [menu](../menu.ts), [course registry](../courses.ts), [race](../game-race.ts), and
 [startup](../startup.ts) are top-level game files under `racing`. The shared
 [car](../racer.ts) keeps its original physics; its only AI integration change is
-exporting the existing control flags. A single call to `racing.runGameMenu()` at
-startup opens the game menu in a separate scene. The starting menu cannot be
+exporting the existing control flags. The [block API](../api.ts) starts the menu
+with `racing.startGame()`, or starts a selected race with `racing.raceOnTrack()`.
+The [test launcher](../main.ts) is included only when building this project
+directly, not when importing it as an extension. The starting menu cannot be
 dismissed with B; there is no direct-USA fallback. Back still returns from track,
 lap, and bot selectors. Racing, training, and watching all use the same
 [driving display](../driving-display.ts), reusing upstream [UI](../ui.ts) and
@@ -71,6 +73,8 @@ node --test tracks/create-tilemap.test.js
 Run these commands from the project root. The AI metadata generator checks the
 original track gates before writing its file. If the upstream track generation
 settings change, update its settings rather than editing generated coordinates.
+The `ai/tests/` suite is local-only and ignored by Git; its test command requires
+that local folder. The track-generator tests remain tracked.
 
 For a standalone learner project, the lesson can also be started with just:
 

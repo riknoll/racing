@@ -5,4 +5,8 @@ const MENU_TEST_SEQUENCE: string[] = [];
 const MENU_TEST_REPEAT = false;
 const MENU_TEST_SKIP_PROMPTS = false;
 
-racing.runGameMenu(MENU_TEST_SEQUENCE, MENU_TEST_REPEAT, MENU_TEST_SKIP_PROMPTS);
+if (MENU_TEST_SEQUENCE.length || MENU_TEST_REPEAT || MENU_TEST_SKIP_PROMPTS) {
+    racing.runGameMenu(MENU_TEST_SEQUENCE, MENU_TEST_REPEAT, MENU_TEST_SKIP_PROMPTS);
+} else {
+    racing.startGame();
+}

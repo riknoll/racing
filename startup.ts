@@ -10,7 +10,7 @@ namespace racing {
         try {
             aiRacing.loadBots();
             aiRacing.getTrainingDriver();
-            const icons = [racing.getCarFrames(0)[1], racing.getCarFrames(1)[1], memoryMenuIcon()];
+            const icons = [racing.getPlayerCarFrames()[1], racing.getCarFrames(1)[1], memoryMenuIcon()];
             while (true) {
                 const count = aiRacing.trainedBots().length;
                 const status = count ? count + (count === 1 ? " AI BOT READY" : " AI BOTS READY") : "NO AI TRAINED";

@@ -26,14 +26,21 @@
         "game-race.ts",
         "startup.ts",
         "carImages.ts",
-        "main.ts",
+        "player-logo.ts",
+        "api.ts",
         "tilemap.g.ts",
         "tilemap.g.jres",
         "ai/docs/teach-driver.md",
         "ai/docs/test-driver.md",
         "ai/docs/storage.md",
         "ai/docs/prebuilt-bots.md",
-        "ai/docs/test-track.md"
+        "ai/docs/test-track.md",
+        "docs/start-game.md",
+        "docs/race-on-track.md",
+        "docs/set-car-logo.md"
+    ],
+    "testFiles": [
+        "main.ts"
     ],
     "supportedTargets": [
         "arcade"

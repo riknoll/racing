@@ -1,5 +1,10 @@
 namespace racing {
     const BOT_UI_COLORS = [2, 5];
+
+    export function requireRaceLaps(laps: number): void {
+        if (laps < 1 || laps > 4 || laps !== Math.floor(laps)) throw "Choose one to four racing laps";
+    }
+
     /** Human and learned racers share physics but keep their own lap progress. */
     export class RaceSession {
         readonly track: aiRacing.Track;
@@ -13,11 +18,11 @@ namespace racing {
         showingMessage = false;
 
         constructor(public readonly course: Course, public readonly laps: number, bots: aiRacing.BotSlot[]) {
-            if (laps < 1 || laps > 4 || laps !== Math.floor(laps)) throw "Choose one to four racing laps";
+            requireRaceLaps(laps);
             this.track = course.createTrack();
             this.gateGoal = laps * this.track.gates.length;
             const stats = new racing.RacerStats(100, 100, 100, 100, 100, 100);
-            this.player = new aiRacing.LearningCar(stats, racing.getCarFrames(0), this.track);
+            this.player = new aiRacing.LearningCar(stats, racing.getPlayerCarFrames(), this.track);
             this.player.controlEnabled = true;
             this.player.paused = true;
             for (const bot of bots) {

@@ -39,7 +39,7 @@ namespace aiRacing {
         for (const car of cars) car.destroy();
         cars = [];
         driver = new Driver();
-        player = new LearningCar(new racing.RacerStats(100, 100, 100, 100, 100, 100), racing.getCarFrames(0), track);
+        player = new LearningCar(new racing.RacerStats(100, 100, 100, 100, 100, 100), racing.getPlayerCarFrames(), track);
         cars.push(player);
         player.paused = true;
         watchedCar = player;
