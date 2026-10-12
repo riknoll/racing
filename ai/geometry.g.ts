@@ -1,6 +1,8 @@
 // Auto-generated code. Do not edit.
 
-// Each vertex is X/Y as UInt16LE pixels; gates 2*i and 2*i+1 bracket vertex i.
+// Each vertex is X/Y as UInt16LE pixels, four bytes per vertex.
+// Shared gates are 16-byte Int32LE records: gate 0 crosses the finish on the last-to-first segment,
+// and gates 2*i+1 and 2*i+2 bracket vertex i.
 // Vertices follow gate traversal order; connect the last vertex back to the first.
 namespace trackCenterlines {
     //% whenUsed

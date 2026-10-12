@@ -2,6 +2,12 @@
 
 Reset a second car to the start and let the trained model attempt one lap.
 
+From the starting menu, **View AI** opens the selected bot's steering/pedal
+graphs. Press A there and choose **Watch a lap** to run that bot on the track
+it was trained on. The watch ends after a lap or its time limit; B returns early.
+It returns to the graphs without changing the saved model. **Back** from the
+action menu returns to the starting menu.
+
 ```sig
 aiRacing.testDriver()
 ```
@@ -16,7 +22,9 @@ aiRacing.testDriver()
 For each decision, the AI finds the five most similar stored driving situations.
 Steering emphasizes road position and aiming angle. Pedals emphasize speed,
 approaching bends, and terrain: a stopped car should not copy a moving car's
-coasting just because their positions match. Closer examples receive stronger
+coasting just because their positions match. Off-road and reverse comparisons
+also include road position, heading, and aiming angle to distinguish continuing
+to back up from ending a recovery. Closer examples receive stronger
 votes. It chooses **left / straight / right** and **accelerate / brake / reverse /
 coast** separately, then uses the same control flags and physics as your car.
 
@@ -27,7 +35,7 @@ no automatic rescue driver when the AI makes a mistake.
 ## Ending the attempt
 
 The attempt ends after one lap or when its time limit is reached. The limit is
-the longer of two minutes or 1.5 times your teaching time. There is no manual
+the longer of three minutes or 1.5 times your teaching time. There is no manual
 finish-early shortcut. Only one attempt runs automatically.
 
 The report shows elapsed time, on-road percentage, and checkpoints reached.
@@ -39,8 +47,9 @@ results do not add training examples.
 - The prototype records up to 2,400 examples. Regular samples cover roughly four
   minutes, but frequent pedal changes fill the buffer sooner. Beyond that, the
   oldest examples are replaced.
-- Training is kept in memory for the activity. It is released when the activity
-  returns to the original demo, or when the simulator restarts.
+- Training stays in memory across menu choices and is saved by bot slot. A
+  successfully saved slot is restored after restart; an unsaved `*` slot is
+  session-only. Menu races never retrain it.
 - Clean racing laps rarely teach reversing. Include a recovery demonstration
   if you want the model to learn that action.
 - Try changing the similarity weights in [driver.ts](../driver.ts). Does giving

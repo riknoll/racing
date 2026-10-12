@@ -16,7 +16,7 @@ namespace aiRacing {
         readonly picture = image.create(160, 120);
         private view = MemoryView.Steering;
 
-        constructor(private driver: Driver) {}
+        constructor(private driver: Driver, private continueText = "race") {}
 
         draw(animate: boolean): void {
             this.picture.fill(15);
@@ -30,7 +30,7 @@ namespace aiRacing {
             this.center("AIM", 79, image.font5);
             this.picture.print("RIGHT", 123, 79, 1, image.font5);
             this.legend();
-            this.center("< > view A race B info", 112, image.font5);
+            this.center("< > view A " + this.continueText + " B info", 112, image.font5);
 
             const count = this.driver.count();
             const batch = Math.max(1, Math.ceil(count / 40));
@@ -47,6 +47,11 @@ namespace aiRacing {
 
         switchView(): void {
             this.view = this.view === MemoryView.Steering ? MemoryView.Pedals : MemoryView.Steering;
+            this.draw(false);
+        }
+
+        setPedalView(pedals: boolean): void {
+            this.view = pedals ? MemoryView.Pedals : MemoryView.Steering;
             this.draw(false);
         }
 
@@ -114,26 +119,37 @@ namespace aiRacing {
     }
 
     /** Inspect the training data in a separate scene, leaving the racing scene intact. */
-    export function showTrainingSummary(driver: Driver): void {
-        const chart = new MemoryChart(driver);
+    export function showTrainingSummary(driver: Driver, continueText?: string, extraInfo?: string): void {
+        if (!continueText) continueText = "race";
+        const chart = new MemoryChart(driver, continueText);
         game.pushScene();
         try {
             scene.setBackgroundColor(15);
             scene.setBackgroundImage(chart.picture);
             chart.draw(true);
             releaseChartButtons();
-            while (!controller.A.isPressed()) {
-                if (controller.left.isPressed() || controller.right.isPressed()) {
+            let finished = false;
+            let manual = false;
+            while (!finished) {
+                const scripted = manual ? undefined : racing.scriptedMenuChoice("AI memories", ["Steering", "Pedals", "Info", "Continue"], true);
+                if (scripted === undefined) manual = true;
+                if (scripted === 3 || scripted === -1 || (manual && controller.A.isPressed())) {
+                    finished = true;
+                } else if (scripted === 0 || scripted === 1) {
+                    chart.setPedalView(scripted === 1);
+                } else if (manual && (controller.left.isPressed() || controller.right.isPressed())) {
                     chart.switchView();
                     releaseChartButtons();
-                } else if (controller.B.isPressed()) {
+                } else if (scripted === 2 || (manual && controller.B.isPressed())) {
                     const counts = driver.actionCounts;
-                    game.showLongText("Each dot is one stored example.\nLeft/right: the angle to the road ahead.\nHigher: faster forward speed. Bottom: stopped or reversing."
+                    const info = (extraInfo ? extraInfo + "\n" : "") + "Each dot is one stored example.\nLeft/right: the angle to the road ahead.\nHigher: faster forward speed. Bottom: stopped or reversing."
                         + "\nColors and shapes show your steering or pedal action. This chart shows only two of the AI's seven inputs."
                         + "\nLeft: " + counts[0] + "\nRight: " + counts[1] + "\nAccelerate: " + counts[2]
                         + "\nBrake: " + counts[3] + "\nReverse: " + counts[4]
                         + (counts[4] ? "" : "\nNo reverse examples: the AI has not learned reversing.")
-                        + "\nThe animation displays saved examples; it does not train the AI again.", DialogLayout.Full);
+                        + "\nThe animation displays saved examples; it does not train the AI again.";
+                    if (racing.skipTestPrompts()) console.log(info);
+                    else game.showLongText(info, DialogLayout.Full);
                     releaseChartButtons();
                 }
                 pause(20);

@@ -51,7 +51,7 @@ test("one full Monaco teaching lap trains a driver that can attempt the same cou
     assert(driver.count() >= 40);
     assert(driver.count() <= host.ai.SAMPLE_LIMIT);
     const count = driver.count();
-    const timeLimit = Math.max(120000, car.elapsedMillis * 1.5);
+    const timeLimit = Math.max(host.ai.MIN_ATTEMPT_TIME_MS, car.elapsedMillis * 1.5);
     t.diagnostic(`Teaching: ${car.elapsedMillis / 1000}s, ${count} examples, ${car.offRoadMillis / 1000}s off-road`);
     track.reset(car);
     car.controlEnabled = false;

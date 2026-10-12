@@ -7,7 +7,7 @@ const DEFAULT_CONFIG = Object.freeze({
     size: 200, width: 4, simplify: 2, angles: 16, tileset: "compact",
 })
 
-/** Reads the checked-in gate buffers without regenerating shared assets. */
+/** Reads checked-in 16-byte Int32LE gate records without regenerating shared assets. */
 function readTrackGates(source) {
     const namespaces = Array.from(source.matchAll(/\bnamespace trackWaypoints\s*\{([^}]*)\}/g))
     if (namespaces.length !== 1) throw new Error("Expected exactly one trackWaypoints namespace")
@@ -17,8 +17,8 @@ function readTrackGates(source) {
     for (const match of body.matchAll(/\s*export const ([a-zA-Z_]\w*)\s*=\s*hex`([^`]*)`;\s*/gy)) {
         const [, id, hex] = match
         if (gates.has(id)) throw new Error(`Duplicate trackWaypoints track: ${id}`)
-        if (!/^(?:[0-9a-fA-F]{16})+$/.test(hex)) {
-            throw new Error(`${id}: gates must be non-empty 8-byte UInt16LE records`)
+        if (!/^(?:[0-9a-fA-F]{32})+$/.test(hex)) {
+            throw new Error(`${id}: gates must be non-empty 16-byte Int32LE records`)
         }
         gates.set(id, Buffer.from(hex, "hex"))
         end = match.index + match[0].length
@@ -28,7 +28,7 @@ function readTrackGates(source) {
     return gates
 }
 
-/** Returns { centerline: Buffer, roadWidth: number } only when every gate matches. */
+/** Returns metadata only when the finish gate and every ordered turn pair match. */
 function trackMetadata(map, checkedInGates) {
     const roadWidth = map.roadWidth * 16
     if (!Number.isFinite(map.roadWidth) || !Number.isFinite(roadWidth) || roadWidth <= 0) {
@@ -45,16 +45,19 @@ function trackMetadata(map, checkedInGates) {
         centerline.writeUInt16LE(x, i * 4)
         centerline.writeUInt16LE(y, i * 4 + 2)
     }
-    if (!Buffer.isBuffer(checkedInGates) || !checkedInGates.length || checkedInGates.length % 8) {
-        throw new Error("Expected checked-in gates as non-empty 8-byte UInt16LE records")
+    if (!Buffer.isBuffer(checkedInGates) || !checkedInGates.length || checkedInGates.length % 16) {
+        throw new Error("Expected checked-in gates as non-empty 16-byte Int32LE records")
     }
-    if (checkedInGates.length !== vertices.length * 16) {
-        throw new Error("Checked-in gates must contain two gates per centerline vertex")
+    if (checkedInGates.length !== (vertices.length * 2 + 1) * 16) {
+        throw new Error("Checked-in gates must contain a finish gate followed by two gates per centerline vertex")
     }
     const gates = makeGates(map)
     for (let i = 0; i < gates.length; i++) {
         const values = [gates[i].start.x, gates[i].start.y, gates[i].end.x, gates[i].end.y]
-        if (values.some((value, k) => value !== checkedInGates.readUInt16LE(i * 8 + k * 2))) {
+        if (!values.every(value => Number.isInteger(value) && value >= -2147483648 && value <= 2147483647)) {
+            throw new Error("Gate pixel coordinates must be finite Int32 values")
+        }
+        if (values.some((value, k) => value !== checkedInGates.readInt32LE(i * 16 + k * 4))) {
             throw new Error(`Generated gates do not match checked-in trackWaypoints at gate ${i}; check the SVG and geometry configuration`)
         }
     }
@@ -91,7 +94,9 @@ function generateGeometry(projectRoot = path.dirname(__dirname), config = DEFAUL
     export const ${item.id} = ${item.roadWidth};`).join("\n")
     return `// Auto-generated code. Do not edit.
 
-// Each vertex is X/Y as UInt16LE pixels; gates 2*i and 2*i+1 bracket vertex i.
+// Each vertex is X/Y as UInt16LE pixels, four bytes per vertex.
+// Shared gates are 16-byte Int32LE records: gate 0 crosses the finish on the last-to-first segment,
+// and gates 2*i+1 and 2*i+2 bracket vertex i.
 // Vertices follow gate traversal order; connect the last vertex back to the first.
 namespace trackCenterlines {
 ${centerlines}

@@ -24,6 +24,56 @@ test("nearby heading angles match across a full-turn boundary", () => {
     assert(Math.abs(ai.angleDifference(10 * Math.PI, 0)) < 1e-12);
 });
 
+test("normal forward pedal comparisons retain their speed, bend, and terrain weights", () => {
+    const { ai } = loadRacing();
+    const a = new ai.Observation(2, 0.8, 0.3, 0.2, 0.4, 0, 0.7);
+    const b = new ai.Observation(-2, -0.8, 0.3, 0.2, 0.4, 0, -0.7);
+    assert.equal(a.pedalDistanceSquaredTo(b), 0, "normal driving must not change its geometry-independent pedal vote");
+    b.speed = 0.7;
+    b.nearBend = 0.1;
+    b.bend = -0.2;
+    const expected = 64 * (a.speed - b.speed) ** 2 + 4 * (a.nearBend - b.nearBend) ** 2
+        + 4 * (a.bend - b.bend) ** 2;
+    assert.equal(a.pedalDistanceSquaredTo(b), expected);
+    a.speed = 0;
+    b.speed = -0.157 / 200;
+    b.nearBend = a.nearBend;
+    b.bend = a.bend;
+    assert.equal(a.pedalDistanceSquaredTo(b), 64 * b.speed ** 2,
+        "saved zero-speed quantization must not activate reverse geometry");
+});
+
+test("recovery pedal comparisons include geometry symmetrically and wrap heading and aim", () => {
+    const { ai } = loadRacing();
+    for (const [speed, offRoad] of [[-0.1, 0], [0.1, 1]]) {
+        const a = new ai.Observation(1, 0.7, 0.5, 0.5, speed, offRoad, 0.8);
+        const b = new ai.Observation(0, 0, 0.5, 0.5, speed, offRoad, 0.2);
+        assert.equal(a.pedalDistanceSquaredTo(b), a.distanceSquaredTo(b));
+        assert.equal(a.pedalDistanceSquaredTo(b), b.pedalDistanceSquaredTo(a));
+        assert(a.pedalDistanceSquaredTo(b) > 8);
+    }
+    const a = new ai.Observation(0, 179 / 180, 0, 0, -0.1, 1, 179 / 180);
+    const b = new ai.Observation(0, -179 / 180, 0, 0, -0.1, 1, -179 / 180);
+    assert(a.pedalDistanceSquaredTo(b) < 0.003);
+});
+
+test("reverse recovery learns where to stop and resume forward rather than backing up indefinitely", () => {
+    const { racing, ai } = loadRacing();
+    const driver = new ai.Driver();
+    const backing = new ai.Observation(1, 0.7, 0.5, 0.5, -0.1, 0, 0.8);
+    const rejoined = new ai.Observation(0, 0, 0.5, 0.5, -0.1, 0, 0.2);
+    const stopped = new ai.Observation(0, 0, 0.5, 0.5, 0, 0, 0.2);
+    for (let i = 0; i < 20; i++) driver.learn(backing, racing.ControlStateFlag.ReverseOn);
+    for (let i = 0; i < 5; i++) {
+        driver.learn(rejoined, racing.ControlStateFlag.BrakingOn);
+        driver.learn(stopped, racing.ControlStateFlag.AccelerationOn);
+    }
+    for (const [observation, pedal] of [[backing, ai.Pedal.Reverse], [rejoined, ai.Pedal.Brake], [stopped, ai.Pedal.Accelerate]]) {
+        assert.equal(ai.Action.fromControls(driver.predict(observation)).pedal, pedal);
+    }
+    assert.equal(driver.count(), 30, "prediction must not add rescue examples");
+});
+
 test("five-neighbor voting learns left, right, acceleration, braking, and reverse", () => {
     const { racing, ai } = loadRacing();
     const F = racing.ControlStateFlag;

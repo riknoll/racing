@@ -1,9 +1,4 @@
 namespace aiRacing {
-    export interface Gate {
-        start: util.Point;
-        end: util.Point;
-    }
-
     interface RoadPosition {
         segment: number;
         fraction: number;
@@ -14,23 +9,22 @@ namespace aiRacing {
 
     /** Track geometry supplies observations and checkpoints, not driving commands. */
     export class Track {
-        readonly gates: Gate[] = [];
+        readonly gates: racing.Gate[] = [];
         readonly centers: util.Point[] = [];
+        private finishGateOffset: number;
 
         constructor(gates: Buffer, centers: Buffer, public readonly roadWidth: number) {
-            if (gates.length < 24 || gates.length % 8 || centers.length < 12 || centers.length % 4 || roadWidth <= 0) {
+            if (gates.length < 48 || gates.length % 16 || centers.length < 12 || centers.length % 4 || roadWidth <= 0) {
                 throw "Invalid racing track geometry";
             }
-            for (let i = 0; i < gates.length; i += 8) {
-                this.gates.push({
-                    start: new util.Point(gates.getNumber(NumberFormat.UInt16LE, i), gates.getNumber(NumberFormat.UInt16LE, i + 2)),
-                    end: new util.Point(gates.getNumber(NumberFormat.UInt16LE, i + 4), gates.getNumber(NumberFormat.UInt16LE, i + 6))
-                });
-            }
+            this.gates = racing.readGates(gates);
             for (let i = 0; i < centers.length; i += 4) {
                 this.centers.push(new util.Point(centers.getNumber(NumberFormat.UInt16LE, i), centers.getNumber(NumberFormat.UInt16LE, i + 2)));
             }
-            if (this.gates.length !== this.centers.length * 2) throw "Expected two racing gates per turn";
+            this.finishGateOffset = this.gates.length - this.centers.length * 2;
+            if (this.finishGateOffset !== 0 && this.finishGateOffset !== 1) {
+                throw "Expected two gates per turn with an optional finish gate";
+            }
             for (let i = 0; i < this.centers.length; i++) {
                 if (!this.segmentLength(i)) throw "A racing road segment has zero length";
             }
@@ -40,7 +34,7 @@ namespace aiRacing {
             const gate = this.gates[0];
             car.x = (gate.start.x + gate.end.x) / 2;
             car.y = (gate.start.y + gate.end.y) / 2;
-            // The first gate is before turn zero, on the last centerline segment.
+            // The first gate precedes turn zero, on the final road segment.
             const start = this.centers[this.centers.length - 1];
             const end = this.centers[0];
             car.heading = Math.atan2(end.y - start.y, end.x - start.x);
@@ -49,6 +43,7 @@ namespace aiRacing {
             car.vy = 0;
             car.controlState = 0;
             car.currentGateIndex = 0;
+            car.currentLap = 0;
             car.completedGates = 0;
             car.elapsedMillis = 0;
             car.offRoadMillis = 0;
@@ -62,10 +57,28 @@ namespace aiRacing {
                 new util.Point(car.left, car.top), new util.Point(car.right, car.top),
                 new util.Point(car.right, car.bottom), new util.Point(car.left, car.bottom)
             ];
-            // Match the race's tolerance for missing the first gate at a corner.
-            for (let ahead = 1; ahead <= 2; ahead++) {
+            const movementX = car.x - car.lastTrackX;
+            const movementY = car.y - car.lastTrackY;
+            const onRoad = !car.isOffRoad();
+            const sweptLeft = Math.min(car.left, car.lastTrackX);
+            const sweptRight = Math.max(car.right, car.lastTrackX);
+            const sweptTop = Math.min(car.top, car.lastTrackY);
+            const sweptBottom = Math.max(car.bottom, car.lastTrackY);
+            // Recover from missed gates rather than requiring another perfect lap.
+            // The half-lap bound excludes gates just passed while reversing.
+            for (let ahead = 1; ahead <= Math.floor(this.gates.length / 2); ahead++) {
                 const next = (car.currentGateIndex + ahead) % this.gates.length;
                 const gate = this.gates[next];
+                if (Math.max(gate.start.x, gate.end.x) < sweptLeft || Math.min(gate.start.x, gate.end.x) > sweptRight
+                    || Math.max(gate.start.y, gate.end.y) < sweptTop || Math.min(gate.start.y, gate.end.y) > sweptBottom) continue;
+                const segment = this.segmentForGate(next);
+                const start = this.centers[segment];
+                const end = this.centers[(segment + 1) % this.centers.length];
+                const forward = movementX * (end.x - start.x) + movementY * (end.y - start.y);
+                if (forward < 0) continue;
+                if (ahead > 2) {
+                    if (!onRoad || forward <= 0) continue;
+                }
                 const midpointX = (gate.start.x + gate.end.x) / 2;
                 const midpointY = (gate.start.y + gate.end.y) / 2;
                 let crossing = midpointX >= car.left && midpointX <= car.right
@@ -81,6 +94,7 @@ namespace aiRacing {
                 if (crossing) {
                     car.currentGateIndex = next;
                     car.completedGates += ahead;
+                    car.currentLap = Math.floor(car.completedGates / this.gates.length);
                     break;
                 }
             }
@@ -113,8 +127,7 @@ namespace aiRacing {
         private nearestRoadPosition(car: racing.Car): RoadPosition {
             // Gates before/after a turn identify nearby road segments. Searching
             // only these prevents jumping to a neighboring straight at a hairpin.
-            const turn = Math.floor(car.currentGateIndex / 2);
-            const expected = car.currentGateIndex % 2 ? turn : turn - 1;
+            const expected = this.segmentForGate(car.currentGateIndex);
             let nearest: RoadPosition;
             let bestDistance = 1000000000;
             for (let step = -1; step <= 1; step++) {
@@ -133,6 +146,15 @@ namespace aiRacing {
                 }
             }
             return nearest;
+        }
+
+        private segmentForGate(index: number): number {
+            // Upstream race maps prepend the finish line to the turn pairs;
+            // the Test Track uses only turn pairs and starts at the first one.
+            const paired = index - this.finishGateOffset;
+            if (paired < 0) return this.centers.length - 1;
+            const turn = Math.floor(paired / 2);
+            return (turn + (paired % 2 ? 0 : -1) + this.centers.length) % this.centers.length;
         }
 
         private positionAhead(position: RoadPosition, distance: number): RoadPosition {

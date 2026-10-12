@@ -57,7 +57,7 @@ test("both views fit the screen and plot extreme angles, forward speed, and reve
         const controls = [0, 1, 2, 16][i % 4] | [0, 4, 8][i % 3];
         driver.learn(new host.ai.Observation(0, 0, 0, 0, i % 2 ? 2 : -2, 0, i % 2 ? 1 : -1), controls);
     }
-    const chart = new host.ai.MemoryChart(driver);
+    const chart = new host.ai.MemoryChart(driver, "options");
     for (let view = 0; view < 2; view++) {
         chart.picture.operations = [];
         chart.draw(false);

@@ -3,6 +3,8 @@ namespace aiRacing {
     const NEIGHBOR_COUNT = 5;
     const WEIGHT_SMOOTHING = 0.04;
     const PEDAL_SPEED_WEIGHT = 64;
+    // Quantized zero may be slightly negative; distinguish actual reversing.
+    const REVERSE_SPEED_THRESHOLD = -1 / racing.TOP_SPEED_MAX;
 
     enum Decision {
         Steering,
@@ -42,14 +44,17 @@ namespace aiRacing {
                 + speed * speed + 2 * offRoad * offRoad + 12 * aim * aim;
         }
 
-        /** Keep rolling/coasting examples distinct from stopped/accelerating examples. */
+        /** Match normal pedals by speed; use the full situation to learn recovery. */
         pedalDistanceSquaredTo(other: Observation): number {
             const speed = this.speed - other.speed;
             const nearBend = this.nearBend - other.nearBend;
             const bend = this.bend - other.bend;
             const offRoad = this.offRoad - other.offRoad;
-            return PEDAL_SPEED_WEIGHT * speed * speed + 4 * nearBend * nearBend
+            const distance = PEDAL_SPEED_WEIGHT * speed * speed + 4 * nearBend * nearBend
                 + 4 * bend * bend + 4 * offRoad * offRoad;
+            const recovering = this.offRoad !== 0 || other.offRoad !== 0
+                || this.speed < REVERSE_SPEED_THRESHOLD || other.speed < REVERSE_SPEED_THRESHOLD;
+            return distance + (recovering ? this.distanceSquaredTo(other) : 0);
         }
     }
 

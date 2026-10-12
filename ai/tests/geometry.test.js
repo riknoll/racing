@@ -19,12 +19,12 @@ const svg = `<svg><path d="M0 0 L100 0 L100 70 L0 70 Z"/>
 
 function gateBuffer(map) {
     const gates = makeGates(map)
-    const data = Buffer.alloc(gates.length * 8)
+    const data = Buffer.alloc(gates.length * 16)
     for (let i = 0; i < gates.length; i++) {
-        data.writeUInt16LE(gates[i].start.x, i * 8)
-        data.writeUInt16LE(gates[i].start.y, i * 8 + 2)
-        data.writeUInt16LE(gates[i].end.x, i * 8 + 4)
-        data.writeUInt16LE(gates[i].end.y, i * 8 + 6)
+        data.writeInt32LE(gates[i].start.x, i * 16)
+        data.writeInt32LE(gates[i].start.y, i * 16 + 4)
+        data.writeInt32LE(gates[i].end.x, i * 16 + 8)
+        data.writeInt32LE(gates[i].end.y, i * 16 + 12)
     }
     return data
 }
@@ -35,6 +35,19 @@ function readCenterline(data) {
         x: data.readUInt16LE(i * 4),
         y: data.readUInt16LE(i * 4 + 2),
     }))
+}
+
+function assertGateOnSegment(gate, from, to, fraction) {
+    const dx = to.x - from.x, dy = to.y - from.y
+    const center = { x: (gate.start.x + gate.end.x) / 2, y: (gate.start.y + gate.end.y) / 2 }
+    for (const axis of ["x", "y"]) {
+        const expected = from[axis] + fraction * (to[axis] - from[axis])
+        assert.ok(Math.abs(center[axis] - expected) <= 0.5 + 1e-9, `${axis}: gate midpoint matches endpoint rounding`)
+    }
+    const gateDx = gate.end.x - gate.start.x, gateDy = gate.end.y - gate.start.y
+    assert.ok(Math.abs(dx * gateDx + dy * gateDy) / Math.hypot(dx, dy) <= Math.SQRT2 + 1e-9)
+    assert.ok(dx * (gate.start.y - center.y) - dy * (gate.start.x - center.x) < 0)
+    assert.ok(dx * (gate.end.y - center.y) - dy * (gate.end.x - center.x) > 0)
 }
 
 function withFixture(action) {
@@ -101,22 +114,47 @@ test("metadata rejects out-of-range and nonfinite centerline coordinates on eith
 test("metadata requires complete gates and rejects changed coordinates or traversal order", () => {
     const map = makeTilemap(svg, DEFAULT_CONFIG)
     const gates = gateBuffer(map)
-    for (const invalid of [undefined, null, Buffer.alloc(0), Buffer.alloc(7)]) {
-        assert.throws(() => trackMetadata(map, invalid), /non-empty 8-byte UInt16LE records/)
+    for (const invalid of [undefined, null, Buffer.alloc(0), Buffer.alloc(7), Buffer.alloc(8),
+        Buffer.alloc(15), Buffer.alloc(17), Buffer.alloc(gates.length / 2)]) {
+        assert.throws(() => trackMetadata(map, invalid), /non-empty 16-byte Int32LE records/)
     }
-    assert.throws(() => trackMetadata(map, gates.subarray(8)), /two gates per centerline vertex/)
+    for (const invalid of [gates.subarray(16), gates.subarray(32),
+        Buffer.concat([gates, gates.subarray(0, 16)]), Buffer.concat([gates, gates.subarray(0, 32)])]) {
+        assert.throws(() => trackMetadata(map, invalid), /finish gate followed by two gates per centerline vertex/)
+    }
     const changed = Buffer.from(gates)
     changed[0] ^= 1
-    const swapped = Buffer.concat([gates.subarray(8, 16), gates.subarray(0, 8), gates.subarray(16)])
+    const swapped = Buffer.concat([gates.subarray(16, 32), gates.subarray(0, 16), gates.subarray(32)])
     for (const invalid of [changed, swapped]) {
         assert.throws(() => trackMetadata(map, invalid), /do not match checked-in trackWaypoints at gate 0/)
     }
+    const swappedTurnPair = Buffer.concat([gates.subarray(0, 16), gates.subarray(32, 48),
+        gates.subarray(16, 32), gates.subarray(48)])
+    assert.throws(() => trackMetadata(map, swappedTurnPair), /do not match checked-in trackWaypoints at gate 1/)
+})
+
+test("metadata accepts negative extended endpoints and validates every signed coordinate", () => {
+    const map = makeTilemap(svg, DEFAULT_CONFIG)
+    const gates = gateBuffer(map)
+    const values = Array.from({ length: gates.length / 4 }, (_, i) => gates.readInt32LE(i * 4))
+    assert.ok(values.some(value => value < 0))
+    assert.doesNotThrow(() => trackMetadata(map, gates))
+    for (let offset = 0; offset < gates.length; offset += 4) {
+        const changed = Buffer.from(gates)
+        changed.writeInt32LE(gates.readInt32LE(offset) + 65536, offset)
+        assert.throws(() => trackMetadata(map, changed),
+            new RegExp(`do not match checked-in trackWaypoints at gate ${Math.floor(offset / 16)};`))
+    }
+    assert.throws(() => trackMetadata({ ...map, roadWidth: 2 ** 30 }, gates), /Gate pixel coordinates exceed Int32/)
 })
 
 test("gate parsing rejects missing, duplicate, malformed, and unsupported declarations", () => {
-    const hex = "0100020003000400"
+    const hex = "ffffffff0000008000000100ffffff7f"
     const valid = `namespace trackWaypoints {\n//% whenUsed\nexport const sample = hex\`${hex}\`;\n}`
-    assert.deepEqual(readTrackGates(valid).get("sample"), Buffer.from(hex, "hex"))
+    const parsed = readTrackGates(valid).get("sample")
+    assert.deepEqual(parsed, Buffer.from(hex, "hex"))
+    assert.deepEqual(Array.from({ length: 4 }, (_, i) => parsed.readInt32LE(i * 4)),
+        [-1, -2147483648, 65536, 2147483647])
     assert.throws(() => readTrackGates(""), /exactly one trackWaypoints namespace/)
     assert.throws(() => readTrackGates(valid + valid), /exactly one trackWaypoints namespace/)
     assert.throws(() => readTrackGates("namespace trackWaypoints {}"), /No checked-in/)
@@ -124,15 +162,15 @@ test("gate parsing rejects missing, duplicate, malformed, and unsupported declar
         export const sample = hex\`${hex}\`;
         export const sample = hex\`${hex}\`;
     }`), /Duplicate trackWaypoints/)
-    for (const invalid of ["", "gg", "0000"]) {
-        assert.throws(() => readTrackGates(valid.replace(hex, invalid)), /8-byte UInt16LE records/)
+    for (const invalid of ["", "gg", "0000", "0100020003000400", "0".repeat(30), "0".repeat(34)]) {
+        assert.throws(() => readTrackGates(valid.replace(hex, invalid)), /16-byte Int32LE records/)
     }
     assert.throws(() => readTrackGates(valid.replace(`hex\`${hex}\``, "1")), /Malformed trackWaypoints/)
     assert.throws(() => readTrackGates(valid.replace("\n}", "\nexport const ignored = 1;\n}")),
         /Malformed trackWaypoints/)
 })
 
-test("checked-in AI geometry matches all shared gates and compact centerline vertices", () => {
+test("checked-in AI geometry matches shared finish gates, ordered turn pairs, and centerline vertices", () => {
     const source = fs.readFileSync(geometryFile, "utf8")
     assert.equal(source, generateGeometry())
     assert.doesNotMatch(source, /namespace myTiles|trackWaypoints|createTilemap|image\.|img`/)
@@ -150,7 +188,37 @@ test("checked-in AI geometry matches all shared gates and compact centerline ver
         const centerline = Buffer.from(hex, "hex")
         assert.deepEqual(readCenterline(centerline), makeWaypoints(map, true))
         assert.deepEqual(centerline, trackMetadata(map, gates.get(name)).centerline)
-        assert.equal(gates.get(name).length, centerline.length * 4)
+        const generatedGates = makeGates(map)
+        assert.equal(gates.get(name).length, centerline.length * 8 + 16)
+        assert.equal(generatedGates.length, readCenterline(centerline).length * 2 + 1)
+        generatedGates.forEach((gate, i) => {
+            assert.deepEqual(Array.from({ length: 4 }, (_, k) => gates.get(name).readInt32LE(i * 16 + k * 4)),
+                [gate.start.x, gate.start.y, gate.end.x, gate.end.y])
+        })
+        const finish = generatedGates[0]
+        const vertices = readCenterline(centerline), last = vertices.at(-1), first = vertices[0]
+        const dx = first.x - last.x, dy = first.y - last.y
+        const finishX = map.finish.x * 16, finishY = map.finish.y * 16
+        const t = ((finishX - last.x) * dx + (finishY - last.y) * dy) / (dx * dx + dy * dy)
+        assert.ok(t > 0 && t < 1, `${name}: finish marker projects inside the closing segment`)
+        assertGateOnSegment(finish, last, first, t)
+        const gateDx = finish.end.x - finish.start.x, gateDy = finish.end.y - finish.start.y
+        const markerPosition = ((finishX - finish.start.x) * gateDx + (finishY - finish.start.y) * gateDy) /
+            (gateDx * gateDx + gateDy * gateDy)
+        assert.ok(markerPosition > 0 && markerPosition < 1, `${name}: gate spans the finish marker`)
+        assert.ok(Math.abs((finishX - finish.start.x) * gateDy - (finishY - finish.start.y) * gateDx) /
+            Math.hypot(gateDx, gateDy) < 1, `${name}: gate crosses the finish marker within pixel rounding`)
+        const clearance = map.roadWidth * 8 + 12
+        vertices.forEach((vertex, i) => {
+            const previous = vertices[(i + vertices.length - 1) % vertices.length]
+            const next = vertices[(i + 1) % vertices.length]
+            const incoming = Math.hypot(vertex.x - previous.x, vertex.y - previous.y)
+            const outgoing = Math.hypot(next.x - vertex.x, next.y - vertex.y)
+            assertGateOnSegment(generatedGates[2 * i + 1], previous, vertex,
+                1 - Math.min(clearance, incoming / 3) / incoming)
+            assertGateOnSegment(generatedGates[2 * i + 2], vertex, next,
+                Math.min(clearance, outgoing / 3) / outgoing)
+        })
         assert.match(widths, new RegExp(`//% whenUsed\\s+export const ${name} = ${map.roadWidth * 16};`))
         vertexCount += centerline.length / 4
     }

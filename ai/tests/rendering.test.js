@@ -6,55 +6,67 @@ const ts = require("typescript");
 const { test } = require("node:test");
 const { root } = require("./test-host");
 
-test("HUD lines fit the screen and overlays are hidden throughout a dialog", () => {
+test("training has no wide HUD bars, preserves camera look-ahead, and hides instruments during dialogs", () => {
     const text = fs.readFileSync(path.join(root, "ai", "activity.ts"), "utf8");
     const source = ts.createSourceFile("activity.ts", text, ts.ScriptTarget.Latest, true);
     const functions = [];
-    const names = ["initialize", "showMessage"];
     function visit(node) {
-        if (ts.isFunctionDeclaration(node) && names.includes(node.name.text)) functions.push(node.getText(source));
+        if (ts.isFunctionDeclaration(node) && ["initialize", "showMessage"].includes(node.name.text)) functions.push(node.getText(source));
         ts.forEachChild(node, visit);
     }
     visit(source);
-    assert.equal(functions.length, names.length);
     const renderables = [];
+    const updates = [];
+    const rectangles = [];
     const prints = [];
-    let gateDraws = 0;
-    const target = { width: 160, fillRect: () => {}, print: (text, x, y, color, font) => prints.push({ text, x, y, font }) };
+    const visibility = [];
+    const camera = [];
+    const target = {
+        width: 160,
+        fillRect: (x, y, width, height) => rectangles.push({ x, y, width, height }),
+        print: (text, x, y, color, font) => prints.push({ text, x, y, font })
+    };
     const context = vm.createContext({
-        initialized: false, showingMessage: false,
-        watchedCar: { currentGateIndex: 0, completedGates: 49, elapsedMillis: 239999 },
-        status: "TEACH", driver: { count: () => 2400 },
-        image: { font5: { charWidth: 6, charHeight: 5 } },
-        Track: class { constructor() { this.gates = Array(50).fill({ start: {}, end: {} }); } },
-        trackWaypoints: {}, trackCenterlines: {}, trackRoadWidths: {},
-        tilemap: () => {}, tiles: { setCurrentTilemap: () => {} },
-        racing: { generateBackground: () => ({}) },
+        initialized: false, showingMessage: false, status: "TEACH",
+        watchedCar: { x: 100, y: 200, heading: 0, currentLap: 1, elapsedMillis: 1234, paused: false },
+        drivingDisplay: { update: (...args) => updates.push(args), setVisible: value => visibility.push(value) },
+        image: { font8: { charWidth: 6, charHeight: 8 } },
+        tiles: { setCurrentTilemap: () => {} },
+        racing: { generateBackground: () => ({}), skipTestPrompts: () => false },
         scroller: { CameraScrollMode: { BothDirections: 0 }, scrollBackgroundWithCamera: () => {} },
-        scene: { createRenderable: (_, handler) => renderables.push(handler), setBackgroundImage: () => {} },
-        drawing: { shiftedByCamera: point => point, drawThickLine: () => gateDraws++ },
+        scene: {
+            createRenderable: (_, handler) => renderables.push(handler),
+            setBackgroundImage: () => {},
+            centerCameraAt: (...args) => camera.push(args)
+        },
         DialogLayout: { Full: 0 },
-        game: { showLongText: () => {
-            assert.equal(context.showingMessage, true);
-            renderables.forEach(handler => handler(target, {}));
-            assert.equal(prints.length, 0);
-            assert.equal(gateDraws, 0);
-        } }
+        game: {
+            onUpdate: handler => { context.frameUpdate = handler; },
+            showLongText: () => {
+                assert.equal(context.showingMessage, true);
+                assert.equal(visibility.at(-1), false);
+                renderables.forEach(handler => handler(target, {}));
+                assert.equal(prints.length, 0);
+            }
+        }
     });
     vm.runInContext(ts.transpileModule(functions.join("\n"), {
         compilerOptions: { target: ts.ScriptTarget.ES2017 }
     }).outputText, context);
-    context.initialize();
-    for (const status of ["READY", "TEACH", "AI", "FINISHED"]) {
-        context.status = status;
-        prints.length = 0;
-        renderables[1](target, {});
-        assert.equal(prints.length, 2);
-        assert(prints[0].y + prints[0].font.charHeight < prints[1].y);
-        for (const line of prints) assert(line.x + line.text.length * line.font.charWidth <= target.width);
-    }
+    context.initialize({ tilemap: {}, createTrack: () => ({}) });
+    context.frameUpdate();
+    assert.deepEqual(camera[0], [130, 200]);
+    assert.deepEqual(updates[0], [1234, 1, false]);
+    renderables.forEach(handler => handler(target, {}));
+    assert.equal(prints.length, 0, "the driving scene should only use shared instruments");
+    context.status = "READY";
+    renderables.forEach(handler => handler(target, {}));
+    assert.equal(prints[0].text, "A: start teaching");
+    assert(prints[0].x + prints[0].text.length * prints[0].font.charWidth <= 160);
+    assert(rectangles.every(rect => rect.width < 160));
     prints.length = 0;
-    context.showMessage("Teaching instructions");
+    context.showMessage("Instructions");
+    assert.deepEqual(visibility, [false, true]);
     assert.equal(context.showingMessage, false);
 });
 
