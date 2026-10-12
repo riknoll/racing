@@ -4,7 +4,7 @@ namespace aiRacing {
 
     const STORAGE_RESERVE = 256;
     const BOT_HEADER_SIZE = 24;
-    const BOT_FORMAT_VERSION = 2;
+    const BOT_FORMAT_VERSION = 1;
     const ABSOLUTE_RECORD = 0x0c;
     const MIN_SAVED_SPEED = -racing.REVERSE_TOP_SPEED / racing.TOP_SPEED_MAX;
 
@@ -129,7 +129,7 @@ namespace aiRacing {
             requireInteger(observation.offRoad, 0, 1, "Bot off-road flag");
             requireInteger(action.steer, -1, 1, "Bot steering");
             requireInteger(action.pedal, Pedal.Coast, Pedal.Reverse, "Bot pedal");
-            // Keep the original quantization: signed error <= scale/254 for
+            // Signed rounding error <= scale/254 for
             // offset, <= 1/254 for angles, and <= (1-MIN_SAVED_SPEED)/510 for
             // speed. Zero is exact for offset and angles; packing below is lossless.
             const values: number[] = [
@@ -149,8 +149,7 @@ namespace aiRacing {
             if (delta) {
                 const flagPosition = position++;
                 let pairMask = 0;
-                // Zero pairs need no bytes, but each sample still has its own
-                // exact actions. This changes packing, NOT sensor precision.
+                // Omit zero pairs while preserving exact actions for each sample.
                 for (let i = 0; i < values.length; i += 2) {
                     const packed = ((values[i] - previous[i]) & 15)
                         | (((values[i + 1] - previous[i + 1]) & 15) << 4);

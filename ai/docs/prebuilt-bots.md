@@ -1,7 +1,7 @@
 # Prebuilt example bots
 
 [prebuilt-bots.ts](../prebuilt-bots.ts) contains two exported MakeCode `Buffer`
-literals in `aiRacing.prebuilt`. These are the exact version 2 buffers exported
+literals in `aiRacing.prebuilt`. These preserve the saved examples exported
 from the trained bots' settings, not scripts or waypoint replays.
 
 | Model | Export | Course | Teaching laps | Examples | Buffer bytes | Reverse examples |

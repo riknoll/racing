@@ -93,18 +93,17 @@ saving with the actual learned Driver, Track, and car physics. Their road-contac
 fixture uses centerline distance rather than the rendered tilemap; browser and
 physical-device behavior still need integration testing.
 
-## Version 2 binary format
+## Binary format
 
-Version 2 changes only the lossless packing after quantization. Sensor precision,
-sample count/order, actions, public APIs, and lesson metadata stay the same.
-Unreleased version 1 data is rejected explicitly rather than migrated or cleared.
+The format packs quantized sensor values losslessly while preserving every
+sample in order, its exact actions, and the lesson metadata.
 
 The 24-byte little-endian header:
 
 | Byte offset | Field |
 | --- | --- |
 | 0-3 | ASCII `RBOT` |
-| 4 | Format version, currently 2 |
+| 4 | Format version, currently 1 |
 | 5 | Course index 0-6 (6 is the training-only Test Track) |
 | 6-7 | UInt16 example count, at most 2,400 |
 | 8-11 | UInt32 teaching milliseconds |
@@ -140,9 +139,8 @@ The escape's steering bits are `11`, which cannot be a valid action; every other
 bit of the escape must be zero. The following action byte uses only bits 0-4,
 with a valid steering value; its high bits are reserved and must be zero.
 
-The extra escape byte makes absolute records one byte larger than version 1,
-but skipping unchanged pairs makes typical full lessons smaller overall.
-Compression remains **lossless after exactly the same quantization**.
+Skipping unchanged sensor pairs keeps typical full lessons small without
+discarding samples. Packing is **lossless after sensor quantization**.
 
 Decoding and writing validate the signature, version, count, metadata, finite
 scale, CRC, canonical escape, reserved absolute-action bits, steering,
