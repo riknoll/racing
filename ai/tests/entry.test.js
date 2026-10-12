@@ -14,6 +14,7 @@ function entryHost(selections) {
     const slots = [0, 1].map(index => ({ index, driver: { examples: 0, count() { return this.examples; } }, courseIndex: -1 }));
     const driver = slots[0].driver;
     const courses = ["Australia", "Great Britain", "Italy", "Monaco", "Netherlands", "USA"].map(name => ({ name }));
+    const testTrack = { name: "Test Track" };
     const context = vm.createContext({
         __choose: (title, choices, subtitle, allowBack, icons, initialSelection = 0) => {
             menus.push({ title, choices: Array.from(choices), subtitle, initialSelection, allowBack });
@@ -32,12 +33,12 @@ function entryHost(selections) {
         __load: () => {},
         __botInfo: () => "",
         __view: (data, label) => events.push(["view", data.count(), label]),
-        __watch: slot => events.push(["watch", slot]),
+        __watch: (slot, course) => events.push(course ? ["watch", slot, course.name] : ["watch", slot]),
         __race: (course, laps) => events.push(["race", course.name, laps, slots.filter(slot => slot.driver.count() >= 40).length]),
         __dispose: () => events.push("dispose"),
         __release: () => {},
         __courses: () => courses,
-        __trainingCourses: () => [{ name: "Test Track" }].concat(courses),
+        __trainingCourses: () => [testTrack].concat(courses),
         __configure: () => {},
         __frames: () => [{}, {}],
         __icon: () => ({}),
@@ -72,11 +73,11 @@ function entryHost(selections) {
     vm.runInContext(ts.transpileModule(declarations + fs.readFileSync(path.join(root, "startup.ts"), "utf8"), {
         compilerOptions: { target: ts.ScriptTarget.ES2017 }
     }).outputText, context);
-    return { context, events, menus, scenes, originalScene };
+    return { context, events, menus, scenes, originalScene, slots };
 }
 
 test("the starting menu retains training through View AI and a four-lap map selection", () => {
-    const host = entryHost([1, 1, 4, 0, 2, 1, 1, 0, 4, 3, -1]);
+    const host = entryHost([1, 1, 4, 0, 2, 1, 2, 0, 4, 3, -1]);
     host.context.racing.runGameMenu();
     assert.deepEqual(host.events, ["push", ["train", "Monaco", 1, 1], ["view", 55, "options"], ["race", "Netherlands", 4, 1], "dispose", "pop"]);
     assert.deepEqual(host.menus[0].choices, ["Race", "Train AI", "View AI"]);
@@ -150,7 +151,7 @@ test("back from training lap selection returns to the training-track list", () =
 });
 
 test("View AI shows graphs first, can watch the chosen bot, then returns to those graphs without retraining", () => {
-    const host = entryHost([1, 1, 0, 2, 2, 1, 0, 1, -1]);
+    const host = entryHost([1, 1, 0, 2, 2, 1, 0, 2, -1]);
     host.context.racing.runGameMenu();
     assert.deepEqual(host.events, [
         "push", ["train", "Test Track", 1, 3],
@@ -159,5 +160,37 @@ test("View AI shows graphs first, can watch the chosen bot, then returns to thos
     ]);
     const actionMenus = host.menus.filter(menu => menu.choices[0] === "Watch a lap");
     assert.equal(actionMenus.length, 2);
-    assert.deepEqual(actionMenus[0].choices, ["Watch a lap", "Back"]);
+    assert.deepEqual(actionMenus[0].choices, ["Watch a lap", "Watch another track", "Back"]);
+});
+
+test("a Test Track bot can watch any regular track and returns to its unchanged graphs", () => {
+    const host = entryHost([1, 1, 0, 2, 2, 1, 1, 3, 2, -1]);
+    host.context.racing.runGameMenu();
+    assert.deepEqual(host.events, [
+        "push", ["train", "Test Track", 1, 3],
+        ["view", 55, "options"], ["watch", 1, "Monaco"], ["view", 55, "options"],
+        "dispose", "pop"
+    ]);
+    assert.deepEqual(host.menus.find(menu => menu.title === "Watch track").choices,
+        ["Australia", "Great Britain", "Italy", "Monaco", "Netherlands", "USA"]);
+    assert.equal(host.slots[1].courseIndex, 6);
+    assert.equal(host.slots[1].driver.count(), 55);
+});
+
+test("a regular-track bot can watch Test Track, with its training track excluded from other choices", () => {
+    const host = entryHost([1, 0, 4, 0, 2, 0, 1, 0, 2, -1]);
+    host.context.racing.runGameMenu();
+    assert(host.events.some(event => Array.isArray(event) && event[0] === "watch"
+        && event[1] === 0 && event[2] === "Test Track"));
+    assert.deepEqual(host.menus.find(menu => menu.title === "Watch track").choices,
+        ["Test Track", "Australia", "Great Britain", "Italy", "Netherlands", "USA"]);
+    assert.equal(host.slots[0].courseIndex, 3);
+});
+
+test("Back from a watch-track picker returns to the action menu without watching or reopening the graphs", () => {
+    const host = entryHost([1, 0, 0, 0, 2, 0, 1, -1, 2, -1]);
+    host.context.racing.runGameMenu();
+    assert.deepEqual(host.menus.slice(-4).map(menu => menu.title), ["View AI", "Watch track", "View AI", "RACING"]);
+    assert.equal(host.events.filter(event => Array.isArray(event) && event[0] === "view").length, 1);
+    assert(!host.events.some(event => Array.isArray(event) && event[0] === "watch"));
 });

@@ -8,10 +8,9 @@ namespace aiRacing {
         ended = false;
         cancelled = false;
 
-        constructor(public readonly bot: BotSlot) {
+        constructor(public readonly bot: BotSlot, course?: racing.Course) {
             if (bot.driver.count() < MIN_EXAMPLES) throw "Train this bot before watching a lap";
-            this.course = bot.courseIndex === 6 ? racing.getTrainingCourses()[0] : racing.getCourses()[bot.courseIndex];
-            if (!this.course) throw "The bot's training track is unavailable";
+            this.course = resolveWatchCourse(bot, course);
             this.track = this.course.createTrack();
             this.car = new LearningCar(new racing.RacerStats(100, 100, 100, 100, 100, 100),
                 racing.getCarFrames(bot.index + 1), this.track);
@@ -41,21 +40,31 @@ namespace aiRacing {
 
     let activeWatch: LapWatch;
 
-    export function watchBotLap(index: number): void {
+    function resolveWatchCourse(bot: BotSlot, selected?: racing.Course): racing.Course {
+        if (selected) {
+            if (racing.getTrainingCourses().indexOf(selected) < 0) throw "Choose a valid watch track";
+            return selected;
+        }
+        const course = bot.courseIndex === 6 ? racing.getTrainingCourses()[0] : racing.getCourses()[bot.courseIndex];
+        if (!course) throw "The bot's training track is unavailable";
+        return course;
+    }
+
+    /** Watch the training track unless another registered course is selected. */
+    export function watchBotLap(index: number, course?: racing.Course): void {
         const bot = botSlot(index);
         if (bot.driver.count() < MIN_EXAMPLES) throw "Train this bot before watching a lap";
+        const selectedCourse = resolveWatchCourse(bot, course);
         game.pushScene();
         let watch: LapWatch;
         let display: racing.DrivingDisplay;
         let showingMessage = false;
         try {
-            const course = bot.courseIndex === 6 ? racing.getTrainingCourses()[0] : racing.getCourses()[bot.courseIndex];
-            if (!course) throw "The bot's training track is unavailable";
-            tiles.setCurrentTilemap(course.tilemap);
+            tiles.setCurrentTilemap(selectedCourse.tilemap);
             scene.setBackgroundImage(racing.generateBackground());
             scroller.scrollBackgroundWithCamera(scroller.CameraScrollMode.BothDirections);
             racing.releaseMenuButtons();
-            watch = new LapWatch(bot);
+            watch = new LapWatch(bot, selectedCourse);
             activeWatch = watch;
             display = new racing.DrivingDisplay(watch.track.gates, watch.car, 1);
             scene.createRenderable(100, target => {

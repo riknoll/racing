@@ -4,9 +4,19 @@ Reset a second car to the start and let the trained model attempt one lap.
 
 From the starting menu, **View AI** opens the selected bot's steering/pedal
 graphs. Press A there and choose **Watch a lap** to run that bot on the track
-it was trained on. The watch ends after a lap or its time limit; B returns early.
-It returns to the graphs without changing the saved model. **Back** from the
+it was trained on, or **Watch another track** to choose a different course.
+The picker includes the six regular maps and Test Track, excluding the bot's
+training track. Back from the picker returns to the action menu without starting
+a watch. The watch ends after a lap or its time limit; B returns early.
+It returns to the graphs without changing the saved model or its training-track
+metadata. A model may struggle on an unfamiliar course. **Back** from the
 action menu returns to the starting menu.
+
+From TypeScript, an optional course chooses the watch track:
+
+```typescript
+aiRacing.watchBotLap(0, racing.getCourses()[3]) // Watch Bot 1 on Monaco
+```
 
 ```sig
 aiRacing.testDriver()

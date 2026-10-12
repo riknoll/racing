@@ -11,8 +11,11 @@ The starting menu offers **Race**, **Train AI**, and **View AI**.
   Continue/Retry decisions. New training replaces only the chosen slot.
 - **View AI:** choose a slot to inspect its stored examples. Empty slots show
   zero examples; there is no scripted opponent. After viewing a trained bot's
-  graphs, A opens **Watch a lap / Back**. Watching uses its training track,
-  returns to the graphs afterward, and does not change its examples. AI watch/test
+  graphs, A opens **Watch a lap / Watch another track / Back**. **Watch a lap**
+  uses its training track; **Watch another track** lets you choose any other
+  regular map or Test Track. Back from that picker returns to the action menu.
+  Watching returns to the graphs afterward and does not change its examples or
+  recorded training track. AI watch/test
   attempts allow at least three minutes, or 1.5 times the teaching duration when
   that is longer. B ends a menu watch early. Player training has no time cutoff.
 Both cars use the current upstream car stats, including its 20-pixel/second
@@ -93,6 +96,8 @@ Invalid/ambiguous choices report an error rather than silently choosing a defaul
 
 View example: `["View AI", "Bot 1", "Pedals", "Continue", "Back"]`.
 Watch example: `["View AI", "Bot 1", "Continue", "Watch a lap", "Continue", "Back"]`.
+Other-track example: `["View AI", "Bot 1", "Continue", "Watch another track", "Monaco", "Continue", "Back"]`
+(for a bot trained on a track other than Monaco).
 The final Back in these examples exits the trained bot's action menu.
 Training example: `["Train AI", "Bot 1", "Test Track", "3 laps", "Continue"]`.
 The final `"Continue"` exits the memory chart, not an exercise review.
