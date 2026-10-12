@@ -1,6 +1,7 @@
 # Teach AI by driving one lap
 
-The teaching block records a single driving attempt on Monaco; the starting menu
+The teaching block in the **Racing** category records a single driving attempt on
+Monaco; the starting menu
 can choose any race track or the [Test Track](test-track.md), followed by 1–4
 continuous training laps. The Test Track defaults to three laps.
 The AI learns from your current road
@@ -62,8 +63,11 @@ the chart does not change the model.
 
 ```blocks
 aiRacing.teachDriver()
-aiRacing.testDriver()
+racing.startGame()
 ```
+
+After teaching, choose **View AI** in the racing menu to inspect the saved bot
+and watch it drive.
 
 ## Reading the code
 

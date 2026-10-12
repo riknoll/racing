@@ -1,4 +1,4 @@
-# Watch one AI race attempt
+# Watch a trained AI
 
 Reset a second car to the start and let the trained model attempt one lap.
 
@@ -18,13 +18,9 @@ From TypeScript, an optional course chooses the watch track:
 aiRacing.watchBotLap(0, racing.getCourses()[3]) // Watch Bot 1 on Monaco
 ```
 
-```sig
-aiRacing.testDriver()
-```
+For a TypeScript-only single-lap lesson and attempt, teach the model first:
 
-Teach the model first:
-
-```blocks
+```typescript
 aiRacing.teachDriver()
 aiRacing.testDriver()
 ```

@@ -6,9 +6,11 @@ See [AI racing](ai/README.md) for the added teaching activity.
 
 - [Start racing game](docs/start-game.md): open the Race / Train AI / View AI menu.
 - [Race on a track](docs/race-on-track.md): choose a map and lap count in blocks.
+- [Teach AI by driving one lap](ai/docs/teach-driver.md): train a driver on Monaco.
 - [Set car logo](docs/set-car-logo.md): draw an 8x8 sponsor badge for the player car.
 
-The blocks are exposed by [api.ts](api.ts). [main.ts](main.ts) is listed under
+All blocks appear in the **Racing** category and are exposed by
+[api.ts](api.ts) and [ai/activity.ts](ai/activity.ts). [main.ts](main.ts) is listed under
 `testFiles`, so importing this project as an extension does not launch its test
 game. A learner's program can start with just:
 

@@ -1,4 +1,3 @@
-//% color="#007f86" icon="\uf1b9" block="AI Racing" weight=100
 namespace aiRacing {
     export const MIN_EXAMPLES = 40;
     export const MIN_ATTEMPT_TIME_MS = 180000;
@@ -21,7 +20,7 @@ namespace aiRacing {
      */
     //% blockId=racing_ai_teach block="teach AI by driving one lap"
     //% help=github:this/ai/docs/teach-driver
-    //% weight=100
+    //% blockNamespace=racing group="Game" weight=80
     export function teachDriver(): void {
         teachLesson("race", racing.getCourses()[3], selectedBot, 1);
     }
@@ -100,9 +99,6 @@ namespace aiRacing {
     /**
      * Attempt one lap using the recorded examples, without further learning.
      */
-    //% blockId=racing_ai_test block="watch one AI race attempt"
-    //% help=github:this/ai/docs/test-driver
-    //% weight=90
     export function testDriver(): void {
         if (!driver || driver.count() < MIN_EXAMPLES) {
             showMessage("Teach the AI first. It needs at least " + MIN_EXAMPLES + " driving examples.");
