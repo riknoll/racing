@@ -440,4 +440,50 @@ namespace racing {
         timer.top = screen.height - (totalLaps - lap) * 10 - 6;
         return timer;
     }
+
+    export function formatRaceTime(time: number) {
+        const hundredths = Math.floor(time / 10);
+        const minutes = Math.floor(hundredths / 6000);
+        const seconds = Math.floor(hundredths / 100) % 60;
+        const fraction = hundredths % 100;
+        return (minutes < 10 ? "0" : "") + minutes
+            + ":" + (seconds < 10 ? "0" : "") + seconds
+            + "." + (fraction < 10 ? "0" : "") + fraction;
+    }
+
+    export function showRaceResults(result: RaceResult) {
+        const started = game.runtime();
+        const width = 144;
+        const height = 64 + result.laps.length * 14;
+        const top = Math.idiv(screen.height - height, 2);
+        return scene.createRenderable(110, (target, camera) => {
+            const elapsed = game.runtime() - started;
+            const panelProgress = Math.min(1, elapsed / 350);
+            const left = Math.round((screen.width - width) / 2
+                - width * Math.pow(1 - panelProgress, 3));
+            target.fillRect(left, top, width, height, 15);
+            target.drawRect(left, top, width, height, 1);
+            target.print("RACE RESULTS", left + 36, top + 8, 1, image.font8);
+            target.print("PLACE " + result.place + " (stub)", left + 30, top + 22, 5, image.font8);
+
+            for (let i = 0; i <= result.laps.length; i++) {
+                const rowProgress = Math.max(0, Math.min(1, (elapsed - 350 - i * 160) / 250));
+                if (rowProgress === 0) continue;
+                const rowLeft = left + Math.round(screen.width * Math.pow(1 - rowProgress, 3));
+                const isTotal = i === result.laps.length;
+                const rowTop = top + (isTotal ? 42 : 39) + i * 14;
+                const time = isTotal ? result.totalTime : result.laps[i].time;
+                const newBest = isTotal ? result.newBestTotal : result.laps[i].newBest;
+                target.print(isTotal ? "TOTAL" : "LAP " + (i + 1), rowLeft + 8, rowTop, 1, image.font8);
+                target.print(formatRaceTime(time), rowLeft + 46, rowTop, 1, image.font8);
+                if (newBest) {
+                    target.print("NEW!", rowLeft + 106, rowTop, 5, image.font8);
+                }
+            }
+
+            if (elapsed >= 600 + result.laps.length * 160) {
+                target.print("NEW! = PERSONAL BEST", left + 32, top + height - 9, 5, image.font5);
+            }
+        });
+    }
 }

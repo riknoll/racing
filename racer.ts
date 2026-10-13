@@ -4,6 +4,8 @@ namespace racing {
 
     export const TURN_RATE_MIN = mathUtils.degreesToRadians(TURN_RATE_MIN_DEGREES);
     export const TURN_RATE_MAX = mathUtils.degreesToRadians(TURN_RATE_MAX_DEGREES);
+    export const SHARP_TURN_MIN_SPEED_RATIO = 0.7;
+    export const SHARP_TURN_MIN_DURATION_MILLIS = 300;
 
     export const TOP_SPEED_MIN = 70;
     export const TOP_SPEED_MAX = 200;
@@ -88,6 +90,12 @@ namespace racing {
 
         corners: util.Point[] = [];
 
+        private sharpTurnDirection = 0;
+        private sharpTurnMillis = 0;
+        private autoDriveCenters: util.Point[];
+        private autoDriveSegment = 0;
+        private autoDriveTurnRate = 0;
+
         constructor(
             public readonly stats: RacerStats,
             public readonly frames: Image[],
@@ -102,7 +110,7 @@ namespace racing {
             ];
         }
 
-        update(deltaTimeMillis: number) {
+        private updateDriving(deltaTimeMillis: number) {
             if (this.controlEnabled) {
                 this.updateControls();
             }
@@ -125,7 +133,7 @@ namespace racing {
                     this.speed = changeSpeed(this.speed, this.stats.topSpeed, acceleration, deltaTimeMillis);
                 }
             }
-            else if (this.controlState & ControlStateFlag.BrakingOn || (this.controlState & ControlStateFlag.ReverseOn && this.speed > 0)) {
+            else if (this.isBraking()) {
                 if (this.isOffRoad()) {
                     this.speed = changeSpeed(this.speed, 0, OFF_ROAD_DECCELERATION, deltaTimeMillis);
                 }
@@ -163,6 +171,16 @@ namespace racing {
                     this.heading += this.stats.turnRate * (deltaTimeMillis / 1000);
                 }
             }
+        }
+
+        update(deltaTimeMillis: number) {
+            if (this.autoDriveCenters) {
+                this.updateAutoDrive(deltaTimeMillis);
+            }
+            else {
+                this.updateDriving(deltaTimeMillis);
+            }
+            this.updateSharpTurn(deltaTimeMillis);
 
             this.vx = this.speed * Math.cos(this.heading);
             this.vy = this.speed * Math.sin(this.heading);
@@ -182,6 +200,77 @@ namespace racing {
             }
 
             this.setImage(this.frames[frameIndex]);
+        }
+
+        startAutoDrive(gates: Gate[]) {
+            this.controlEnabled = false;
+            this.controlState = 0;
+            this.autoDriveTurnRate = 0;
+            this.autoDriveCenters = getTrackCenterline(gates);
+            let nearestDistance = Infinity;
+            for (let i = 0; i < this.autoDriveCenters.length; i++) {
+                const start = this.autoDriveCenters[i];
+                const end = this.autoDriveCenters[(i + 1) % this.autoDriveCenters.length];
+                const progress = Math.max(0, Math.min(1, getSegmentProgress(this, start, end)));
+                const dx = this.x - (start.x + (end.x - start.x) * progress);
+                const dy = this.y - (start.y + (end.y - start.y) * progress);
+                const squaredDistance = dx * dx + dy * dy;
+                if (squaredDistance < nearestDistance) {
+                    nearestDistance = squaredDistance;
+                    this.autoDriveSegment = i;
+                }
+            }
+        }
+
+        private updateAutoDrive(deltaTimeMillis: number) {
+            const centers = this.autoDriveCenters;
+            const reach = Math.max(3, this.speed * deltaTimeMillis / 1000);
+            for (let i = 0; i < centers.length; i++) {
+                const start = centers[this.autoDriveSegment];
+                const end = centers[(this.autoDriveSegment + 1) % centers.length];
+                if (getSegmentProgress(this, start, end) < 1 && distance(this, end) > reach) {
+                    break;
+                }
+                this.autoDriveSegment = (this.autoDriveSegment + 1) % centers.length;
+            }
+
+            let segment = this.autoDriveSegment;
+            const start = centers[segment];
+            const end = centers[(segment + 1) % centers.length];
+            const progress = Math.max(0, Math.min(1, getSegmentProgress(this, start, end)));
+            let targetX = start.x + (end.x - start.x) * progress;
+            let targetY = start.y + (end.y - start.y) * progress;
+            let lookahead = Math.max(24, Math.max(Math.abs(this.speed) * 0.6, reach * 2));
+            for (let i = 0; i < centers.length; i++) {
+                const next = centers[(segment + 1) % centers.length];
+                const dx = next.x - targetX;
+                const dy = next.y - targetY;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                if (length > lookahead) {
+                    targetX += dx * lookahead / length;
+                    targetY += dy * lookahead / length;
+                    break;
+                }
+                lookahead -= length;
+                targetX = next.x;
+                targetY = next.y;
+                segment = (segment + 1) % centers.length;
+            }
+            const targetHeading = Math.atan2(targetY - this.y, targetX - this.x);
+            const headingError = mathUtils.angleDifference(targetHeading, this.heading);
+            const targetTurnRate = Math.max(-this.stats.turnRate,
+                Math.min(this.stats.turnRate, headingError * 2));
+            this.autoDriveTurnRate = changeSpeed(this.autoDriveTurnRate, targetTurnRate,
+                this.stats.turnRate * 4, deltaTimeMillis);
+            this.heading = mathUtils.clampRadians(
+                this.heading + this.autoDriveTurnRate * deltaTimeMillis / 1000
+            );
+
+            const cornerStrength = Math.min(1, Math.abs(headingError) / (Math.PI / 2));
+            const targetSpeed = this.stats.topSpeed * 0.6 * (1 - cornerStrength * 0.4);
+            this.speed = changeSpeed(this.speed, targetSpeed,
+                this.speed > targetSpeed ? this.stats.deceleration : this.stats.acceleration,
+                deltaTimeMillis);
         }
 
         draw(drawTop: number, drawLeft: number) {
@@ -215,6 +304,39 @@ namespace racing {
             if (controller.down.isPressed()) {
                 this.controlState |= ControlStateFlag.ReverseOn;
             }
+        }
+
+        isBraking() {
+            return !(this.controlState & ControlStateFlag.AccelerationOn)
+                && !!(this.controlState & ControlStateFlag.BrakingOn
+                    || (this.controlState & ControlStateFlag.ReverseOn && this.speed > 0));
+        }
+
+        isSharpTurning() {
+            return this.sharpTurnMillis >= SHARP_TURN_MIN_DURATION_MILLIS
+                && Math.abs(this.speed) > this.stats.topSpeed * SHARP_TURN_MIN_SPEED_RATIO
+                && this.sharpTurnDirection === (this.controlState
+                    & (ControlStateFlag.TurnLeftOn | ControlStateFlag.TurnRightOn));
+        }
+
+        private updateSharpTurn(deltaTimeMillis: number) {
+            const direction = this.controlState
+                & (ControlStateFlag.TurnLeftOn | ControlStateFlag.TurnRightOn);
+            if ((direction !== ControlStateFlag.TurnLeftOn && direction !== ControlStateFlag.TurnRightOn)
+                || Math.abs(this.speed) <= this.stats.topSpeed * SHARP_TURN_MIN_SPEED_RATIO) {
+                this.sharpTurnDirection = 0;
+                this.sharpTurnMillis = 0;
+                return;
+            }
+
+            if (direction !== this.sharpTurnDirection) {
+                this.sharpTurnDirection = direction;
+                this.sharpTurnMillis = 0;
+            }
+            this.sharpTurnMillis = Math.min(
+                SHARP_TURN_MIN_DURATION_MILLIS,
+                this.sharpTurnMillis + deltaTimeMillis
+            );
         }
 
         isOffRoad() {

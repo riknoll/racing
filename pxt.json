@@ -2,6 +2,8 @@
     "name": "my-project",
     "version": "0.0.0",
     "files": [
+        "storage.ts",
+        "effects.ts",
         "util.ts",
         "ui.ts",
         "minimap.ts",

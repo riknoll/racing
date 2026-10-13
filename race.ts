@@ -10,7 +10,7 @@ namespace racing {
 
     export function startRace(track: Track) {
         let gates: Gate[];
-        let totalLaps = 3;
+        let totalLaps = 2;
 
         switch (track) {
             case Track.Netherlands:
@@ -77,37 +77,19 @@ namespace racing {
         timer.top = 0;
 
         const lapTimes: number[] = [];
+        const lapTimeSprites: timerSprite.TimerSprite[] = [];
+        let finished = false;
 
-        game.onUpdate(() => {
-            const currentLap = player.currentLap;
-            player.checkGateOverlaps(gates);
+        const eventContext = game.currentScene().eventContext;
 
-            if (player.currentLap !== currentLap) {
-                lapTimes.push(timer.getElapsedTime());
-                timer.setElapsedTime(0);
-                createLapTime(lapTimes.length - 1, totalLaps, lapTimes[lapTimes.length - 1]);
+        const dustSource = racing.effects.createDustSource(player);
+        const tireTrackSource = racing.effects.createTireTrackSource(player);
+        const tireTrackFactory = tireTrackSource.factory as racing.effects.TireTrackFactory;
+        const offroadTireTrackSource = racing.effects.createOffroadTireTrackSource(player);
+        const offroadTireTrackFactory = offroadTireTrackSource.factory as racing.effects.TireTrackFactory;
 
-                if (player.currentLap === totalLaps) {
-                    player.controlEnabled = false;
-                    player.controlState = 0;
-                    timer.setRunning(false);
-                    let totalTime = 0;
-                    for (let i = 0; i < lapTimes.length; i++) {
-                        totalTime += lapTimes[i];
-                    }
-                    timer.setElapsedTime(totalTime);
-                }
-            }
-
-            scene.centerCameraAt(
-                player.x + 30 * Math.cos(player.heading),
-                player.y + 30 * Math.sin(player.heading)
-            );
-        });
-
-        createMinimapRenderable(gates, player);
-
-        scene.createRenderable(10, (target, camera) => {
+        const minimapRenderable = createMinimapRenderable(gates, player);
+        const hudRenderable = scene.createRenderable(10, (target, camera) => {
             const gate = gates[(player.currentGateIndex + 1) % gates.length];
 
             drawing.drawThickLine(
@@ -122,6 +104,50 @@ namespace racing {
             racing.drawSpeedometer(19, 20, 99, player.speed, player.stats.topSpeed);
         });
 
+        controller.menu.onEvent(ControllerButtonEvent.Pressed, () => {
+            player.startAutoDrive(gates);
+        })
+
+        const handler = eventContext.registerFrameHandler(scene.UPDATE_PRIORITY, () => {
+            const currentLap = player.currentLap;
+            if (!finished) {
+                player.checkGateOverlaps(gates);
+            }
+
+            const offroad = player.isOffRoad();
+            (dustSource.factory as racing.effects.DustFactory).offroad = offroad;
+            tireTrackFactory.braking = player.isBraking();
+            tireTrackFactory.offroad = offroad;
+            tireTrackFactory.sharpTurning = player.isSharpTurning();
+            offroadTireTrackFactory.offroad = offroad;
+
+            if (!finished && player.currentLap !== currentLap) {
+                lapTimes.push(timer.getElapsedTime());
+
+                if (player.currentLap === totalLaps) {
+                    finished = true;
+                    timer.setRunning(false);
+                    // Replace the placement stub when opponent cars are implemented.
+                    const result = recordRaceResult(track, lapTimes, 1);
+                    player.startAutoDrive(gates);
+                    timer.destroy();
+                    for (const lapTimer of lapTimeSprites) lapTimer.destroy();
+                    minimapRenderable.destroy();
+                    hudRenderable.destroy();
+                    showRaceResults(result);
+                }
+                else {
+                    timer.setElapsedTime(0);
+                    lapTimeSprites.push(createLapTime(lapTimes.length - 1, totalLaps,
+                        lapTimes[lapTimes.length - 1]));
+                }
+            }
+
+            scene.centerCameraAt(
+                player.x + 30 * Math.cos(player.heading),
+                player.y + 30 * Math.sin(player.heading)
+            );
+        });
 
         const countdownSprite = fancyText.create("3", 0, 12, fancyText.rounded_large);
         countdownSprite.setFlag(SpriteFlag.RelativeToCamera, true);
