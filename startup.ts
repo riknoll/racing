@@ -31,7 +31,7 @@ namespace racing {
     function chooseRace(): void {
         const courses = getCourses();
         while (true) {
-            const selected = chooseMenu("Choose track", courses.map(course => course.name), "Six race courses");
+            const selected = chooseTrackMenu("Choose track", courses, "Six race courses");
             if (selected < 0) return;
             const laps = chooseMenu("Choose laps", ["1 lap", "2 laps", "3 laps", "4 laps"], courses[selected].name);
             if (laps < 0) continue;
@@ -45,7 +45,7 @@ namespace racing {
         if (slot < 0) return;
         const courses = getTrainingCourses();
         while (true) {
-            const course = chooseMenu("Training track", courses.map(value => value.name), "Continuous lap training");
+            const course = chooseTrackMenu("Training track", courses, "Continuous lap training");
             if (course < 0) return;
             const laps = chooseMenu("Training laps", ["1 lap", "2 laps", "3 laps", "4 laps"],
                 courses[course].name, true, undefined, course === 0 ? 2 : 0);
@@ -78,7 +78,7 @@ namespace racing {
             const courses = getTrainingCourses();
             const trainingCourse = bot.courseIndex === 6 ? courses[0] : getCourses()[bot.courseIndex];
             const otherCourses = courses.filter(course => course !== trainingCourse);
-            const course = chooseMenu("Watch track", otherCourses.map(value => value.name), "Bot " + (bot.index + 1));
+            const course = chooseTrackMenu("Watch track", otherCourses, "Bot " + (bot.index + 1));
             if (course < 0) continue;
             aiRacing.watchBotLap(bot.index, otherCourses[course]);
             return true;

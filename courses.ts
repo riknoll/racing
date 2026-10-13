@@ -6,8 +6,17 @@ namespace racing {
             public readonly tilemap: tiles.TileMapData,
             public readonly gates: Buffer,
             public readonly centers: Buffer,
-            public readonly roadWidth: number
-        ) {}
+            public readonly roadWidth: number,
+            public readonly previewColors: number[],
+            public patternIndex: number = 0
+        ) {
+            if (previewColors.length !== 3) throw "Course preview colors must contain dark, medium, and light";
+            for (const color of previewColors) {
+                if (color < 0 || color > 15 || color !== Math.floor(color)) {
+                    throw "Invalid preview color for " + name;
+                }
+            }
+        }
 
         createTrack(): aiRacing.Track {
             return new aiRacing.Track(this.gates, this.centers, this.roadWidth);
@@ -20,12 +29,66 @@ namespace racing {
     export function getCourses(): Course[] {
         if (!courses) {
             courses = [
-                new Course(Track.Australia, "Australia", tilemap`australia`, trackWaypoints.australia, trackCenterlines.australia, trackRoadWidths.australia),
-                new Course(Track.GreatBritain, "Great Britain", tilemap`great_britain`, trackWaypoints.greatbritain, trackCenterlines.greatbritain, trackRoadWidths.greatbritain),
-                new Course(Track.Italy, "Italy", tilemap`italy`, trackWaypoints.italy, trackCenterlines.italy, trackRoadWidths.italy),
-                new Course(Track.Monaco, "Monaco", tilemap`monaco`, trackWaypoints.monaco, trackCenterlines.monaco, trackRoadWidths.monaco),
-                new Course(Track.Netherlands, "Netherlands", tilemap`netherlands`, trackWaypoints.netherlands, trackCenterlines.netherlands, trackRoadWidths.netherlands),
-                new Course(Track.USA, "USA", tilemap`usa`, trackWaypoints.usa, trackCenterlines.usa, trackRoadWidths.usa)
+                new Course(
+                    Track.Australia,
+                    "Australia",
+                    tilemap`australia`,
+                    trackWaypoints.australia,
+                    trackCenterlines.australia,
+                    trackRoadWidths.australia,
+                    [14, 4, 5],
+                    2
+                ),
+                new Course(
+                    Track.GreatBritain,
+                    "Great Britain",
+                    tilemap`great_britain`,
+                    trackWaypoints.greatbritain,
+                    trackCenterlines.greatbritain,
+                    trackRoadWidths.greatbritain,
+                    [8, 6, 9],
+                    4
+                ),
+                new Course(
+                    Track.Italy,
+                    "Italy",
+                    tilemap`italy`,
+                    trackWaypoints.italy,
+                    trackCenterlines.italy,
+                    trackRoadWidths.italy,
+                    [4, 5, 1],
+                    3
+                ),
+                new Course(
+                    Track.Monaco,
+                    "Monaco",
+                    tilemap`monaco`,
+                    trackWaypoints.monaco,
+                    trackCenterlines.monaco,
+                    trackRoadWidths.monaco,
+                    [6, 7, 9],
+                    14
+                ),
+                new Course(
+                    Track.Netherlands,
+                    "Netherlands",
+                    tilemap`netherlands`,
+                    trackWaypoints.netherlands,
+                    trackCenterlines.netherlands,
+                    trackRoadWidths.netherlands,
+                    [8, 6, 9],
+                    0
+                ),
+                new Course(
+                    Track.USA,
+                    "USA",
+                    tilemap`usa`,
+                    trackWaypoints.usa,
+                    trackCenterlines.usa,
+                    trackRoadWidths.usa,
+                    [14, 2, 3],
+                    2
+                )
             ];
         }
         return courses;
@@ -34,7 +97,7 @@ namespace racing {
     export function getTrainingCourses(): Course[] {
         if (!testTrack) {
             testTrack = new Course(undefined, "Test Track", aiRacing.getTestTrackMap(), aiRacing.TEST_TRACK_GATES,
-                aiRacing.TEST_TRACK_CENTERS, aiRacing.TEST_TRACK_WIDTH);
+                aiRacing.TEST_TRACK_CENTERS, aiRacing.TEST_TRACK_WIDTH, [12, 14, 4], 6);
         }
         return [testTrack].concat(getCourses());
     }
