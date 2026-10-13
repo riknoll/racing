@@ -35,7 +35,7 @@ namespace racing {
             if (selected < 0) return;
             const laps = chooseMenu("Choose laps", ["1 lap", "2 laps", "3 laps", "4 laps"], courses[selected].name);
             if (laps < 0) continue;
-            raceCourse(courses[selected], laps + 1);
+            startRace(courses[selected], laps + 1, 3);
             return;
         }
     }

@@ -85,6 +85,7 @@ namespace racing {
         controlState = 0;
         currentGateIndex = 0;
         currentLap = 0;
+        distance = 0;
 
         controlEnabled = false;
 

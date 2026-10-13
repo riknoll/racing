@@ -25,7 +25,6 @@
         "ai/activity.ts",
         "menu.ts",
         "menu-debug.ts",
-        "game-race.ts",
         "startup.ts",
         "carImages.ts",
         "player-logo.ts",

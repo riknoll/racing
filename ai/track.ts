@@ -124,6 +124,14 @@ namespace aiRacing {
             );
         }
 
+        calculateDistance(car: racing.Car): number {
+            // Calculate the distance along the track for the given car, used
+            // for determining progress and placement.
+            const position = this.nearestRoadPosition(car);
+
+            return car.currentLap * this.centers.length + position.segment + position.fraction;
+        }
+
         private nearestRoadPosition(car: racing.Car): RoadPosition {
             // Gates before/after a turn identify nearby road segments. Searching
             // only these prevents jumping to a neighboring straight at a hairpin.

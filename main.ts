@@ -10,3 +10,7 @@ if (MENU_TEST_SEQUENCE.length || MENU_TEST_REPEAT || MENU_TEST_SKIP_PROMPTS) {
 } else {
     racing.startGame();
 }
+
+// racing.startRace(racing.Track.USA);
+
+// racing.startRace(racing.getCourses()[0], 2, 4);

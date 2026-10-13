@@ -8,36 +8,14 @@ namespace racing {
         Italy
     }
 
-    export function startRace(track: Track) {
-        let gates: Gate[];
-        let totalLaps = 2;
+    export function startRace(course: Course, totalLaps: number, numOpponents: number) {
+        game.pushScene();
+        const track = course.createTrack();
+        const gates = track.gates;
 
-        switch (track) {
-            case Track.Netherlands:
-                tiles.setCurrentTilemap(tilemap`netherlands`);
-                gates = readGates(trackWaypoints.netherlands);
-                break;
-            case Track.USA:
-                tiles.setCurrentTilemap(tilemap`usa`);
-                gates = readGates(trackWaypoints.usa);
-                break;
-            case Track.Australia:
-                tiles.setCurrentTilemap(tilemap`australia`);
-                gates = readGates(trackWaypoints.australia);
-                break;
-            case Track.GreatBritain:
-                tiles.setCurrentTilemap(tilemap`great_britain`);
-                gates = readGates(trackWaypoints.greatbritain);
-                break;
-            case Track.Monaco:
-                tiles.setCurrentTilemap(tilemap`monaco`);
-                gates = readGates(trackWaypoints.monaco);
-                break;
-            case Track.Italy:
-                tiles.setCurrentTilemap(tilemap`italy`);
-                gates = readGates(trackWaypoints.italy);
-                break;
-        }
+        aiRacing.loadBots();
+
+        tiles.setCurrentTilemap(course.tilemap);
 
         const finishLineSprites = sprites.create(racing.finishLine);
         const finishLinePosition = gateCenter(gates[0]);
@@ -49,26 +27,61 @@ namespace racing {
         finishLineSprites.x = finishLinePosition.x;
         finishLineSprites.y = finishLinePosition.y;
 
+        const stats = new racing.RacerStats(
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+            );
+
         const player = new racing.Car(
-            new racing.RacerStats(
-                100,
-                100,
-                100,
-                100,
-                100,
-                100,
-            ),
+            stats,
             racing.getPlayerCarFrames()
         );
 
+        const places: racing.Car[] = [];
+
+        const opponents: aiRacing.LearningCar[] = [];
+        const bots = aiRacing.getBotSlots();
+        for (let i = 0; i < numOpponents; i++) {
+            const botSlot = bots[i % bots.length];
+
+            const opponent = new aiRacing.LearningCar(stats, racing.getCarFrames(i), track);
+            opponents.push(opponent);
+
+            if (botSlot && botSlot.driver.count() > aiRacing.MIN_EXAMPLES) {
+                opponent.driver = botSlot.driver;
+                opponent.paused = true;
+            }
+        }
+
+        const allCars = [player].concat(opponents);
+
         const firstGate = gateCenter(gates[0]);
         const secondGate = gateCenter(gates[1]);
-        player.x = firstGate.x;
-        player.y = firstGate.y;
-        player.heading = Math.atan2(
+        const startingAngle = Math.atan2(
             secondGate.y - firstGate.y,
             secondGate.x - firstGate.x
         );
+
+        const orthogonalAngle = startingAngle + Math.PI / 2;
+        const spacing = 30;
+
+        // Position cars in two columns at the starting line
+        for (let i = 0; i < allCars.length; i++) {
+            const car = allCars[i];
+
+            const column = (i % 2) - 0.5;
+            const row = 1 + Math.idiv(i, 2);
+
+            car.x = firstGate.x + column * spacing * Math.cos(orthogonalAngle) + row * spacing * Math.cos(startingAngle + Math.PI);
+            car.y = firstGate.y + column * spacing * Math.sin(orthogonalAngle) + row * spacing * Math.sin(startingAngle + Math.PI);
+
+            car.heading = startingAngle;
+            places.push(car);
+        }
 
         scene.setBackgroundImage(racing.generateBackground());
         scroller.scrollBackgroundWithCamera(scroller.CameraScrollMode.BothDirections)
@@ -92,6 +105,8 @@ namespace racing {
         const hudRenderable = scene.createRenderable(10, (target, camera) => {
             const gate = gates[(player.currentGateIndex + 1) % gates.length];
 
+            const placement = places.indexOf(player) + 1;
+
             drawing.drawThickLine(
                 target,
                 drawing.shiftedByCamera(gate.start),
@@ -102,17 +117,26 @@ namespace racing {
 
             racing.drawLapIndicator(135, 0, Math.min(player.currentLap, totalLaps), totalLaps);
             racing.drawSpeedometer(19, 20, 99, player.speed, player.stats.topSpeed);
+            racing.drawPlacemarker(135, 95, placement);
         });
-
-        controller.menu.onEvent(ControllerButtonEvent.Pressed, () => {
-            player.startAutoDrive(gates);
-        })
 
         const handler = eventContext.registerFrameHandler(scene.UPDATE_PRIORITY, () => {
             const currentLap = player.currentLap;
             if (!finished) {
                 player.checkGateOverlaps(gates);
+                player.distance = track.calculateDistance(player);
             }
+
+            for (const opponent of opponents) {
+                track.updateProgress(opponent);
+                opponent.distance = track.calculateDistance(opponent);
+                if (opponent.currentLap === totalLaps) {
+                    opponent.driver = undefined;
+                    opponent.startAutoDrive(gates);
+                }
+            }
+
+            places.sort((a, b) => b.distance - a.distance);
 
             const offroad = player.isOffRoad();
             (dustSource.factory as racing.effects.DustFactory).offroad = offroad;
@@ -126,9 +150,10 @@ namespace racing {
 
                 if (player.currentLap === totalLaps) {
                     finished = true;
+                    const placement = places.indexOf(player) + 1;
                     timer.setRunning(false);
                     // Replace the placement stub when opponent cars are implemented.
-                    const result = recordRaceResult(track, lapTimes, 1);
+                    const result = recordRaceResult(course.trackId, lapTimes, placement);
                     player.startAutoDrive(gates);
                     timer.destroy();
                     for (const lapTimer of lapTimeSprites) lapTimer.destroy();
@@ -149,6 +174,8 @@ namespace racing {
             );
         });
 
+        pauseUntilAllButtonsReleased();
+
         const countdownSprite = fancyText.create("3", 0, 12, fancyText.rounded_large);
         countdownSprite.setFlag(SpriteFlag.RelativeToCamera, true);
         countdownSprite.setFlag(SpriteFlag.Ghost, true);
@@ -165,8 +192,31 @@ namespace racing {
             countdownSprite.y = screen.height / 2;
             timer.setRunning(true);
             player.controlEnabled = true;
+            for (const opponent of opponents) {
+                if (!opponent.driver) {
+                    opponent.startAutoDrive(gates);
+                }
+                opponent.paused = false;
+            }
             pause(1000);
             countdownSprite.destroy();
         });
+
+
+        pauseUntil(() => finished);
+
+
+        return () => {
+            timer.destroy();
+            for (const lapTimer of lapTimeSprites) lapTimer.destroy();
+            minimapRenderable.destroy();
+            hudRenderable.destroy();
+            eventContext.unregisterFrameHandler(handler);
+            countdownSprite.destroy();
+            dustSource.destroy();
+            tireTrackSource.destroy();
+            offroadTireTrackSource.destroy();
+            game.popScene();
+        }
     }
 }

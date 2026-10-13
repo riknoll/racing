@@ -85,6 +85,7 @@ namespace racing {
     `;
 
     export function getCarFrames(colorIndex: number): Image[] {
+        colorIndex = colorIndex % colorMap.height;
         const frames: Image[] = []
         for (const carImage of enemyCarFrames) {
             frames.push(remapCarImage(carImage, colorIndex, colorMap))

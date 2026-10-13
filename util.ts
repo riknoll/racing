@@ -71,4 +71,8 @@ namespace racing {
         const dy = a.y - b.y;
         return Math.sqrt(dx * dx + dy * dy);
     }
+
+    export function pauseUntilAllButtonsReleased() {
+        pauseUntil(() => !controller.anyButton.isPressed());
+    }
 }

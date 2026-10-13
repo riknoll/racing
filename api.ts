@@ -33,9 +33,9 @@ namespace racing {
             case Track.Italy: course = courses[2]; break;
             default: throw "Choose a valid racing track";
         }
-        requireRaceLaps(laps);
+        laps = Math.max(1, Math.min(4, laps)) | 0;
         aiRacing.loadBots();
-        raceCourse(course, laps);
+        startRace(course, laps, 3);
     }
 
     /**

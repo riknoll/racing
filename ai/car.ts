@@ -62,12 +62,5 @@ namespace aiRacing {
             this.vx = 0;
             this.vy = 0;
         }
-
-        isOffRoad(): boolean {
-            const map = game.currentScene().tileMap.data;
-            const col = this.x >> map.scale;
-            const row = this.y >> map.scale;
-            return col < 0 || row < 0 || col >= map.width || row >= map.height || super.isOffRoad();
-        }
     }
 }
