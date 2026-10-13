@@ -58,7 +58,7 @@ namespace racing {
                 100,
                 100,
             ),
-            racing.getCarFrames(0)
+            racing.getPlayerCarFrames()
         );
 
         const firstGate = gateCenter(gates[0]);

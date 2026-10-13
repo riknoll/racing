@@ -1,11 +1,19 @@
 F1 track SVGs taken from https://github.com/f1laps/f1-track-vectors/tree/981ef8e7bc9cb98380602f65f9b7b7f2ba0fe5d9. See LICENSE in that repo for usage details.
 
-Create off-road dust with `racing.effects.createDustSource(car)`. Keep the returned source and set `source.enabled = car.isOffRoad() && Math.abs(car.speed) > 0` when updating the car. Disabling emission lets existing dust dissipate. The source renders below the car; its `DustFactory` creates shrinking circles in colors 14, 13, 1, and 11 with randomized sizes, lifetimes, and velocity based on the car's motion.
+See [AI racing](ai/README.md) for the added teaching activity.
 
-Tire tracks use two separate sources with the same `TireTrackFactory` drawing behavior. `racing.effects.createTireTrackSource(car)` creates color-12 braking and sharp-turn tracks below the car, emitting only on-road. `racing.effects.createOffroadTireTrackSource(car)` creates color-14 off-road tracks at `scene.TILE_MAP_Z - 1` (z = -2), so the tilemap at z = -1 covers brown tracks wherever they overlap the road. The race updates the factories' `braking`, `offroad`, and `sharpTurning` flags from the car's state.
+## Blocks
 
-Sharp turns require 200 ms of continuous steering in one direction while above 70% of the car's top speed, independent of its turn rate. Releasing steering, switching direction, holding both directions, or dropping to or below the speed threshold resets the timer, preventing tracks from brief straightaway corrections. Both track effects leave two stationary marks aligned with movement at emission, last two seconds, and fade through stable dithering during the final second after emission stops.
+- [Start racing game](docs/start-game.md): open the Race / Train AI / View AI menu.
+- [Race on a track](docs/race-on-track.md): choose a map and lap count in blocks.
+- [Teach AI by driving one lap](ai/docs/teach-driver.md): train a driver on Monaco.
+- [Set car logo](docs/set-car-logo.md): draw an 8x8 sponsor badge for the player car.
 
-Finishing the final lap disables player input and starts automatic centerline driving, cruising near 60% of its top speed and slowing for tighter corners. The driver reconstructs corners from the track's gates and uses speed-dependent lookahead to anticipate them. Steering builds up and settles gradually, respects the car's handling turn-rate limit, and follows rounded turns rather than snapping exactly to each target heading. Race results slide onto the screen with each lap time, the total time, and `NEW!` personal-best indicators. A lap is marked when it improves the saved best or a record set earlier in the same race; equal times do not set records.
+All blocks appear in the **Racing** category and are exposed by
+[api.ts](api.ts) and [ai/activity.ts](ai/activity.ts). [main.ts](main.ts) is listed under
+`testFiles`, so importing this project as an extension does not launch its test
+game. A learner's program can start with just:
 
-Results are saved once per finish, including the best lap, best total, latest lap times and total, race count, win count, and best place for that track. Use `readLastLapTimes(track)` to read the latest lap array; other values use `readStorage`. Placement currently displays `PLACE 1 (stub)` and counts as a win until opponent cars and real placement are implemented.
+```blocks
+racing.startGame()
+```

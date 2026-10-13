@@ -1,5 +1,5 @@
 {
-    "name": "my-project",
+    "name": "AI Racing",
     "version": "0.0.0",
     "files": [
         "storage.ts",
@@ -10,10 +10,39 @@
         "background.ts",
         "racer.ts",
         "race.ts",
+        "ai/track.ts",
+        "ai/geometry.g.ts",
+        "ai/training-track.g.ts",
+        "courses.ts",
+        "driving-display.ts",
+        "ai/driver.ts",
+        "ai/storage.ts",
+        "ai/prebuilt-bots.ts",
+        "ai/bots.ts",
+        "ai/car.ts",
+        "ai/visualization.ts",
+        "ai/watch.ts",
+        "ai/activity.ts",
+        "menu.ts",
+        "menu-debug.ts",
+        "game-race.ts",
+        "startup.ts",
         "carImages.ts",
-        "main.ts",
+        "player-logo.ts",
+        "api.ts",
         "tilemap.g.ts",
-        "tilemap.g.jres"
+        "tilemap.g.jres",
+        "ai/docs/teach-driver.md",
+        "ai/docs/test-driver.md",
+        "ai/docs/storage.md",
+        "ai/docs/prebuilt-bots.md",
+        "ai/docs/test-track.md",
+        "docs/start-game.md",
+        "docs/race-on-track.md",
+        "docs/set-car-logo.md"
+    ],
+    "testFiles": [
+        "main.ts"
     ],
     "supportedTargets": [
         "arcade"

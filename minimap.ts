@@ -1,5 +1,5 @@
 namespace racing {
-    export function createMinimapRenderable(gates: Gate[], player: Car) {
+    export function createMinimapRenderable(gates: Gate[], player: Car, shouldBeVisible?: () => boolean) {
         const points = getMinimapPoints(gates, 0.018, 1, 1);
 
         const offset = points.pop();
@@ -28,7 +28,7 @@ namespace racing {
                 1
             );
 
-        });
+        }, shouldBeVisible);
     }
 
     export function getMinimapPoints(gates: Gate[], scale: number, left: number, top: number) {
