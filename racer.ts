@@ -25,7 +25,7 @@ namespace racing {
 
     export const STAT_MAX = 100;
 
-    enum ControlStateFlag {
+    export enum ControlStateFlag {
         AccelerationOn = 1 << 0,
         BrakingOn = 1 << 1,
         TurnLeftOn = 1 << 2,
