@@ -1,11 +1,32 @@
 namespace racing {
     const TRACK_PREVIEW_SIZE = 80;
-    const TRACK_PREVIEW_BEVEL = 2;
-    const TRACK_PREVIEW_MARGIN = 2;
-    const TRACK_PREVIEW_PADDING = TRACK_PREVIEW_BEVEL + TRACK_PREVIEW_MARGIN;
+    const TRACK_PREVIEW_PADDING = 4;
+    const TRACK_PREVIEW_BACKGROUND_DILATION = 6;
     const TRACK_PREVIEW_FRAME_SIZE = TRACK_PREVIEW_SIZE + TRACK_PREVIEW_PADDING * 2;
+    const TRACK_PREVIEW_ANIMATION_FRAMES = 4;
+    const TRACK_PREVIEW_ANIMATION_INTERVAL = 50;
+    const TRACK_PREVIEW_PATTERN_FRAMES = 8;
+    const TRACK_PREVIEW_SCROLL_VECTORS = [
+        new util.Point(0, -1),
+        new util.Point(1, 0),
+        new util.Point(0, 1),
+        new util.Point(-1, 0),
+        new util.Point(1, -1),
+        new util.Point(-1, -1),
+        new util.Point(1, 1),
+        new util.Point(-1, 1)
+    ];
 
-    export function createTrackPreview(course: Course, trackColor?: number, outlineColor?: number, backgroundColor?: number): Image {
+    interface TrackPreviewAnimationFrame {
+        pointOffsets: util.Point[];
+        patternOffset: util.Point;
+    }
+
+    export function createTrackPreview(course: Course, trackColor?: number, outlineColor?: number, backgroundColor?: number, wobble = false): Image {
+        return renderTrackPreview(course, trackColor, outlineColor, backgroundColor, wobble);
+    }
+
+    function renderTrackPreview(course: Course, trackColor?: number, outlineColor?: number, backgroundColor?: number, wobble = false, animation?: TrackPreviewAnimationFrame): Image {
         if (course.patternIndex < 0 || course.patternIndex >= patterns.length
             || course.patternIndex !== Math.floor(course.patternIndex)) {
             throw "Invalid preview pattern for " + course.name;
@@ -14,16 +35,6 @@ namespace racing {
         if (backgroundColor === undefined) backgroundColor = course.previewColors[1];
         if (outlineColor === undefined) outlineColor = course.previewColors[0];
         const track = course.createTrack();
-        const picture = image.create(TRACK_PREVIEW_SIZE, TRACK_PREVIEW_SIZE);
-        picture.fill(backgroundColor);
-        const pattern = patterns[course.patternIndex];
-        for (let y = 0; y < picture.height; y++) {
-            for (let x = 0; x < picture.width; x++) {
-                if (pattern.getPixel(x % pattern.width, y % pattern.height)) {
-                    picture.setPixel(x, y, outlineColor);
-                }
-            }
-        }
         let minX = track.centers[0].x;
         let maxX = minX;
         let minY = track.centers[0].y;
@@ -40,9 +51,9 @@ namespace racing {
         const scale = (TRACK_PREVIEW_SIZE - 8) / Math.max(width + track.roadWidth, height + track.roadWidth);
         const left = (TRACK_PREVIEW_SIZE - 1 - width * scale) / 2;
         const top = (TRACK_PREVIEW_SIZE - 1 - height * scale) / 2;
-        const points = track.centers.map(point => new util.Point(
-            left + (point.x - minX) * scale,
-            top + (point.y - minY) * scale
+        const points = track.centers.map((point, index) => new util.Point(
+            left + (point.x - minX) * scale + (animation ? animation.pointOffsets[index].x : wobble ? Math.randomRange(-1, 1) * 0.5 : 0),
+            top + (point.y - minY) * scale + (animation ? animation.pointOffsets[index].y : wobble ? Math.randomRange(-1, 1) * 0.5 : 0)
         ));
         const trackRadius = Math.max(1, Math.round(track.roadWidth * scale / 4));
         const roadMask = image.create(TRACK_PREVIEW_SIZE, TRACK_PREVIEW_SIZE);
@@ -53,29 +64,43 @@ namespace racing {
             roadMask.fillCircle(Math.round(point.x), Math.round(point.y), trackRadius, 1);
         }
 
+        const backgroundMask = image.create(TRACK_PREVIEW_FRAME_SIZE, TRACK_PREVIEW_FRAME_SIZE);
+        for (let y = 0; y < roadMask.height; y++) {
+            for (let x = 0; x < roadMask.width; x++) {
+                if (roadMask.getPixel(x, y)) {
+                    backgroundMask.fillCircle(x + TRACK_PREVIEW_PADDING, y + TRACK_PREVIEW_PADDING,
+                        TRACK_PREVIEW_BACKGROUND_DILATION, 1);
+                }
+            }
+        }
+        const picture = image.create(TRACK_PREVIEW_FRAME_SIZE, TRACK_PREVIEW_FRAME_SIZE);
+        const pattern = patterns[course.patternIndex];
+        const offsetX = animation ? (animation.patternOffset.x % pattern.width + pattern.width) % pattern.width : 0;
+        const offsetY = animation ? (animation.patternOffset.y % pattern.height + pattern.height) % pattern.height : 0;
+        for (let y = 0; y < picture.height; y++) {
+            for (let x = 0; x < picture.width; x++) {
+                if (!backgroundMask.getPixel(x, y)) continue;
+                const patternX = ((x - TRACK_PREVIEW_PADDING - offsetX) % pattern.width + pattern.width) % pattern.width;
+                const patternY = ((y - TRACK_PREVIEW_PADDING - offsetY) % pattern.height + pattern.height) % pattern.height;
+                picture.setPixel(x, y, pattern.getPixel(patternX, patternY) ? outlineColor : backgroundColor);
+            }
+        }
+
         // Outline the rasterized road, so diagonal edges get exactly one pixel too.
         for (let y = 0; y < TRACK_PREVIEW_SIZE; y++) {
             for (let x = 0; x < TRACK_PREVIEW_SIZE; x++) {
                 if (!roadMask.getPixel(x, y)) continue;
-                picture.setPixel(x, y, trackColor);
+                picture.setPixel(x + TRACK_PREVIEW_PADDING, y + TRACK_PREVIEW_PADDING, trackColor);
                 for (let ny = Math.max(0, y - 1); ny <= Math.min(TRACK_PREVIEW_SIZE - 1, y + 1); ny++) {
                     for (let nx = Math.max(0, x - 1); nx <= Math.min(TRACK_PREVIEW_SIZE - 1, x + 1); nx++) {
-                        if (!roadMask.getPixel(nx, ny)) picture.setPixel(nx, ny, outlineColor);
+                        if (!roadMask.getPixel(nx, ny)) {
+                            picture.setPixel(nx + TRACK_PREVIEW_PADDING, ny + TRACK_PREVIEW_PADDING, outlineColor);
+                        }
                     }
                 }
             }
         }
-        const framed = image.create(TRACK_PREVIEW_FRAME_SIZE, TRACK_PREVIEW_FRAME_SIZE);
-        for (let inset = TRACK_PREVIEW_MARGIN; inset < TRACK_PREVIEW_PADDING; inset++) {
-            const right = framed.width - inset - 1;
-            const bottom = framed.height - inset - 1;
-            framed.drawLine(inset, inset, right, inset, trackColor);
-            framed.drawLine(inset, inset, inset, bottom, trackColor);
-            framed.drawLine(right, inset, right, bottom, outlineColor);
-            framed.drawLine(inset, bottom, right, bottom, outlineColor);
-        }
-        framed.drawImage(picture, TRACK_PREVIEW_PADDING, TRACK_PREVIEW_PADDING);
-        return framed;
+        return picture;
     }
 
     export function chooseTrackMenu(title: string, courses: Course[], subtitle = "", allowBack = true, initialSelection = 0): number {
@@ -101,8 +126,27 @@ namespace racing {
                 113, image.font5, 1);
             scene.setBackgroundImage(picture);
 
-            previewMenu = miniMenu.createMenuFromArray(courses.map(course =>
-                miniMenu.createMenuItem(course.name, createTrackPreview(course))));
+            const previewFrames = courses.map(course => {
+                const direction = TRACK_PREVIEW_SCROLL_VECTORS[course.patternScrollDirection];
+                if (!direction) throw "Invalid preview scroll direction for " + course.name;
+                const centers = course.createTrack().centers;
+                const wobbleFrames: util.Point[][] = [];
+                for (let i = 0; i < TRACK_PREVIEW_ANIMATION_FRAMES; i++) {
+                    wobbleFrames.push(centers.map(point => new util.Point(
+                        Math.randomRange(-1, 1) * 0.5, Math.randomRange(-1, 1) * 0.5)));
+                }
+                const frames: Image[] = [];
+                for (let i = 0; i < TRACK_PREVIEW_PATTERN_FRAMES; i++) {
+                    frames.push(renderTrackPreview(course, undefined, undefined, undefined, false, {
+                        pointOffsets: wobbleFrames[Math.idiv(i, 2) % TRACK_PREVIEW_ANIMATION_FRAMES],
+                        patternOffset: new util.Point(direction.x * i, direction.y * i)
+                    }));
+                }
+                return frames;
+            });
+            const previewItems = courses.map((course, index) =>
+                miniMenu.createMenuItem(course.name, previewFrames[index][0]));
+            previewMenu = miniMenu.createMenuFromArray(previewItems);
             nameMenu = miniMenu.createMenuFromArray(courses.map(course => new TrackNameMenuItem(course.name)));
             for (const menu of [previewMenu, nameMenu]) {
                 miniMenu.setButtonEventsEnabled(menu, false);
@@ -152,6 +196,14 @@ namespace racing {
                     miniMenu.setButtonEventsEnabled(previewMenu, false);
                 });
             }
+            let previewFrame = 0;
+            game.onUpdateInterval(TRACK_PREVIEW_ANIMATION_INTERVAL, () => {
+                if (chosen) return;
+                previewFrame = (previewFrame + 1) % TRACK_PREVIEW_PATTERN_FRAMES;
+                for (let i = 0; i < previewItems.length; i++) {
+                    previewItems[i].setIcon(previewFrames[i][previewFrame]);
+                }
+            });
             releaseMenuButtons();
             miniMenu.setButtonEventsEnabled(previewMenu, true);
             while (!chosen) pause(20);

@@ -26,19 +26,19 @@ Importing the extension does not start the game automatically. The repository's
 
 ## Track previews
 
-TypeScript menus can generate a centered, aspect-ratio-preserving 80x80 preview
-inside a raised-bevel frame, from any course including training courses.
-The two-pixel bevel has bright top/left edges and shaded bottom/right edges,
-with no outer outline. A two-pixel transparent margin surrounds the bevel,
-keeping the complete image 88x88; the inner preview is unchanged. Each course
+TypeScript menus can generate a centered, aspect-ratio-preserving track preview
+from any course including training courses. The road keeps its original 80x80
+layout, offset four pixels inside an 88x88 image. There is no bevel or rectangular
+background: a six-pixel circular dilation of the rasterized road creates a
+track-shaped background, with transparent pixels outside it. Each course
 receives a `previewColors` array in its constructor, ordered `[dark, medium, light]`.
-These colors are independent of the car `colorMap`: light for the road and bevel
-highlights, medium for the image background, and dark for the road outline and
-bevel shadows. Built-in course arrays in `courses.ts` initially match their
+These colors are independent of the car `colorMap`: light for the road, medium
+for the track-shaped background, and dark for the road outline and pattern.
+Built-in course arrays in `courses.ts` initially match their
 previous colormap colors. The background tiles the course's
 `patternIndex` template from `ui.ts`'s `patterns`, using dark pixels over the medium
-base color. The pattern is confined to the inner preview and does not affect
-the road or bevel.
+base color. The pattern is confined to the dilated background and does not affect
+the road or transparent area.
 
 Optional color arguments override the track, outline, and background colors,
 in that order. Preview roads use half the scaled
@@ -46,18 +46,41 @@ road width to keep tight turns legible, with a one-pixel outline generated from
 the road pixels. Generating a preview does not change the active tilemap or the
 actual road width.
 
+The track carousel cycles menu item icons every 50 ms. Four wobble poses randomly
+offset the scaled centerline points by up to half a pixel per axis. The background
+pattern scrolls one pixel per step, wrapping its 8x8 template in an eight-frame
+loop; each wobble pose holds for two consecutive frames, updating every 100 ms.
+The background shape follows the wobbling road while its pattern scrolls
+independently. The preview size stays fixed. The animation ends when the menu closes.
+Standalone previews remain still unless the optional fifth `wobble` argument is
+`true`, which generates one randomly perturbed frame.
+
+Track names use mini-menu's normal text rendering in a fixed 88x8 row below the
+preview. The names do not wobble; both rows retain equal item widths for
+synchronized horizontal scrolling.
+
 ```typescript
 const preview = racing.createTrackPreview(racing.getCourses()[0])
 const customPreview = racing.createTrackPreview(racing.getCourses()[0], 12, 1, 15)
 ```
 
 Set a course's writable `patternIndex` to a zero-based index in `racing.patterns`,
-or pass it as the final optional `Course` constructor argument. New courses
+or pass it after `previewColors` in the `Course` constructor. New courses
 default to pattern 0; built-in courses keep their existing pattern assignments
 in `courses.ts`. Invalid indices produce an error when generating the preview.
 
 ```typescript
 racing.getCourses()[0].patternIndex = 4
+```
+
+Each course's writable `patternScrollDirection` selects a
+`racing.PreviewScrollDirection`: `N`, `E`, `S`, `W`, `NE`, `NW`, `SE`, or `SW`.
+It is the final optional constructor argument and defaults to `N`.
+Built-in directions are Australia N, Great Britain E, Italy S, Monaco W,
+Netherlands NE, USA NW, and Test Track SW.
+
+```typescript
+racing.getCourses()[0].patternScrollDirection = racing.PreviewScrollDirection.SE
 ```
 
 Use `racing.chooseTrackMenu(title, courses, subtitle, allowBack, initialSelection)`

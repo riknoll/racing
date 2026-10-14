@@ -1,4 +1,15 @@
 namespace racing {
+    export enum PreviewScrollDirection {
+        N,
+        E,
+        S,
+        W,
+        NE,
+        NW,
+        SE,
+        SW
+    }
+
     export class Course {
         constructor(
             public readonly trackId: Track,
@@ -8,7 +19,8 @@ namespace racing {
             public readonly centers: Buffer,
             public readonly roadWidth: number,
             public readonly previewColors: number[],
-            public patternIndex: number = 0
+            public patternIndex: number = 0,
+            public patternScrollDirection: PreviewScrollDirection = 0
         ) {
             if (previewColors.length !== 3) throw "Course preview colors must contain dark, medium, and light";
             for (const color of previewColors) {
@@ -37,7 +49,8 @@ namespace racing {
                     trackCenterlines.australia,
                     trackRoadWidths.australia,
                     [14, 4, 5],
-                    2
+                    2,
+                    PreviewScrollDirection.N
                 ),
                 new Course(
                     Track.GreatBritain,
@@ -47,7 +60,8 @@ namespace racing {
                     trackCenterlines.greatbritain,
                     trackRoadWidths.greatbritain,
                     [8, 6, 9],
-                    4
+                    4,
+                    PreviewScrollDirection.E
                 ),
                 new Course(
                     Track.Italy,
@@ -57,7 +71,8 @@ namespace racing {
                     trackCenterlines.italy,
                     trackRoadWidths.italy,
                     [4, 5, 1],
-                    3
+                    3,
+                    PreviewScrollDirection.S
                 ),
                 new Course(
                     Track.Monaco,
@@ -67,7 +82,8 @@ namespace racing {
                     trackCenterlines.monaco,
                     trackRoadWidths.monaco,
                     [6, 7, 9],
-                    14
+                    14,
+                    PreviewScrollDirection.W
                 ),
                 new Course(
                     Track.Netherlands,
@@ -77,7 +93,8 @@ namespace racing {
                     trackCenterlines.netherlands,
                     trackRoadWidths.netherlands,
                     [8, 6, 9],
-                    0
+                    9,
+                    PreviewScrollDirection.S
                 ),
                 new Course(
                     Track.USA,
@@ -87,7 +104,8 @@ namespace racing {
                     trackCenterlines.usa,
                     trackRoadWidths.usa,
                     [14, 2, 3],
-                    2
+                    10,
+                    PreviewScrollDirection.W
                 )
             ];
         }
@@ -97,7 +115,7 @@ namespace racing {
     export function getTrainingCourses(): Course[] {
         if (!testTrack) {
             testTrack = new Course(undefined, "Test Track", aiRacing.getTestTrackMap(), aiRacing.TEST_TRACK_GATES,
-                aiRacing.TEST_TRACK_CENTERS, aiRacing.TEST_TRACK_WIDTH, [12, 14, 4], 6);
+                aiRacing.TEST_TRACK_CENTERS, aiRacing.TEST_TRACK_WIDTH, [12, 14, 4], 6, PreviewScrollDirection.SW);
         }
         return [testTrack].concat(getCourses());
     }
