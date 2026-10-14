@@ -14,6 +14,8 @@
         "ai/geometry.g.ts",
         "ai/training-track.g.ts",
         "courses.ts",
+        "track-previews.g.ts",
+        "track-previews.g.jres",
         "driving-display.ts",
         "ai/driver.ts",
         "ai/storage.ts",
@@ -53,7 +55,8 @@
         "arcade-background-scroll": "github:microsoft/arcade-background-scroll#v0.1.2",
         "arcade-timer-sprite": "github:riknoll/arcade-timer-sprite#v0.0.3",
         "arcade-fancy-text": "github:riknoll/arcade-fancy-text#v0.2.2",
-        "arcade-mini-menu": "pub:60466-34738-60159-51012"
+        "arcade-mini-menu": "pub:60466-34738-60159-51012",
+        "racing (font)": "pub:50218-03224-90813-22938"
     },
     "testDependencies": {}
 }

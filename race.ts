@@ -15,17 +15,7 @@ namespace racing {
 
         aiRacing.loadBots();
 
-        tiles.setCurrentTilemap(course.tilemap);
-
-        const finishLineSprites = sprites.create(racing.finishLine);
-        const finishLinePosition = gateCenter(gates[0]);
-        finishLineSprites.rotation = Math.atan2(
-            gates[0].end.y - gates[0].start.y,
-            gates[0].end.x - gates[0].start.x
-        );
-
-        finishLineSprites.x = finishLinePosition.x;
-        finishLineSprites.y = finishLinePosition.y;
+        createRaceScenery(course, gates);
 
         const stats = new racing.RacerStats(
                 100,
@@ -83,9 +73,6 @@ namespace racing {
             places.push(car);
         }
 
-        scene.setBackgroundImage(racing.generateBackground());
-        scroller.scrollBackgroundWithCamera(scroller.CameraScrollMode.BothDirections)
-
         const timer = racing.createTimer("compact");
         timer.top = 0;
 
@@ -95,11 +82,7 @@ namespace racing {
 
         const eventContext = game.currentScene().eventContext;
 
-        const dustSource = racing.effects.createDustSource(player);
-        const tireTrackSource = racing.effects.createTireTrackSource(player);
-        const tireTrackFactory = tireTrackSource.factory as racing.effects.TireTrackFactory;
-        const offroadTireTrackSource = racing.effects.createOffroadTireTrackSource(player);
-        const offroadTireTrackFactory = offroadTireTrackSource.factory as racing.effects.TireTrackFactory;
+        const carEffects = new racing.effects.CarEffects(player);
 
         const minimapRenderable = createMinimapRenderable(gates, player);
         const hudRenderable = scene.createRenderable(10, (target, camera) => {
@@ -138,12 +121,7 @@ namespace racing {
 
             places.sort((a, b) => b.distance - a.distance);
 
-            const offroad = player.isOffRoad();
-            (dustSource.factory as racing.effects.DustFactory).offroad = offroad;
-            tireTrackFactory.braking = player.isBraking();
-            tireTrackFactory.offroad = offroad;
-            tireTrackFactory.sharpTurning = player.isSharpTurning();
-            offroadTireTrackFactory.offroad = offroad;
+            carEffects.update();
 
             if (!finished && player.currentLap !== currentLap) {
                 lapTimes.push(timer.getElapsedTime());
@@ -213,10 +191,113 @@ namespace racing {
             hudRenderable.destroy();
             eventContext.unregisterFrameHandler(handler);
             countdownSprite.destroy();
-            dustSource.destroy();
-            tireTrackSource.destroy();
-            offroadTireTrackSource.destroy();
+            carEffects.destroy();
             game.popScene();
         }
+    }
+
+    export function startMenuRaceBackground(): () => void {
+        const courses = getCourses();
+        const course = courses[randint(0, courses.length - 1)];
+        const track = course.createTrack();
+        const finishLineSprite = createRaceScenery(course, track.gates);
+        const laneWidth = track.roadWidth * 0.22;
+        const profiles: AutoDriveProfile[] = [
+            { speedRatio: 0.74, cornerSlowdown: 0.6, lookaheadSeconds: 0.45, steeringGain: 1.8, laneOffset: -laneWidth },
+            { speedRatio: 0.67, cornerSlowdown: 0.2, lookaheadSeconds: 0.65, steeringGain: 2.7, laneOffset: 0 },
+            { speedRatio: 0.71, cornerSlowdown: 0.45, lookaheadSeconds: 0.4, steeringGain: 2.2, laneOffset: laneWidth }
+        ];
+        const basePaces = profiles.map(profile => profile.speedRatio);
+        const baseLanes = profiles.map(profile => profile.laneOffset);
+        const paceTargets = basePaces.map(pace => pace + randint(-8, 8) / 100);
+        const nextPaceChanges = profiles.map(profile => game.runtime() + randint(4000, 9000));
+        const passingUntil = [0, 0, 0];
+        const cars: aiRacing.LearningCar[] = [];
+        const carEffects: racing.effects.CarEffects[] = [];
+        const firstGate = gateCenter(track.gates[0]);
+        const nextGate = gateCenter(track.gates[1]);
+        const heading = Math.atan2(nextGate.y - firstGate.y, nextGate.x - firstGate.x);
+        for (let i = 0; i < 3; i++) {
+            const stats = new RacerStats(100 - i * 5, 100 - i * 10, i === 0 ? 85 : 100, 80 + i * 10, 100, 100);
+            const car = new aiRacing.LearningCar(stats, getCarFrames(i), track);
+            const sideways = i === 2 ? track.roadWidth * 0.55 : (i - 0.5) * 18;
+            const behind = 25 + i * 20;
+            car.x = firstGate.x - behind * Math.cos(heading) - sideways * Math.sin(heading);
+            car.y = firstGate.y - behind * Math.sin(heading) + sideways * Math.cos(heading);
+            car.heading = heading;
+            car.speed = stats.topSpeed * profiles[i].speedRatio * 0.85;
+            car.lastTrackX = car.x;
+            car.lastTrackY = car.y;
+            car.startAutoDrive(track.gates, profiles[i]);
+            cars.push(car);
+            carEffects.push(new racing.effects.CarEffects(car));
+        }
+        const eventContext = game.currentScene().eventContext;
+        let cameraX = cars[0].x + 30 * Math.cos(cars[0].heading);
+        let cameraY = cars[0].y + 30 * Math.sin(cars[0].heading);
+        scene.centerCameraAt(cameraX, cameraY);
+        const handler = eventContext.registerFrameHandler(scene.UPDATE_PRIORITY, () => {
+            const now = game.runtime();
+            const dt = eventContext.deltaTimeMillis / 1000;
+            let leader = cars[0];
+            for (const car of cars) {
+                car.distance = track.calculateDistance(car);
+                if (car.distance > leader.distance) leader = car;
+            }
+            for (let i = 0; i < cars.length; i++) {
+                const car = cars[i];
+                const profile = profiles[i];
+                if (now >= nextPaceChanges[i]) {
+                    paceTargets[i] = basePaces[i] + randint(-8, 8) / 100;
+                    nextPaceChanges[i] = now + randint(4000, 9000);
+                }
+                let desiredLane = baseLanes[i];
+                if (now >= passingUntil[i]) {
+                    for (const other of cars) {
+                        if (other === car || Math.cos(other.heading - car.heading) < 0.5) continue;
+                        const dx = other.x - car.x;
+                        const dy = other.y - car.y;
+                        const ahead = dx * Math.cos(car.heading) + dy * Math.sin(car.heading);
+                        const sideways = -dx * Math.sin(car.heading) + dy * Math.cos(car.heading);
+                        if (ahead > 0 && ahead < 50 && Math.abs(sideways) < 16) {
+                            passingUntil[i] = now + 2000;
+                            break;
+                        }
+                    }
+                }
+                const passing = now < passingUntil[i];
+                if (passing) desiredLane = baseLanes[i] < 0 ? laneWidth : -laneWidth;
+                profile.laneOffset += (desiredLane - profile.laneOffset) * Math.min(1, dt * 1.5);
+                // Keep the field close without teleporting cars or assigning places.
+                const catchUp = Math.min(0.08, Math.max(0, leader.distance - car.distance) * 0.04);
+                const desiredPace = paceTargets[i] + catchUp + (passing ? 0.03 : 0);
+                profile.speedRatio += (desiredPace - profile.speedRatio) * Math.min(1, dt);
+            }
+            for (const effects of carEffects) effects.update();
+            cameraX += (leader.x + 30 * Math.cos(leader.heading) - cameraX) * Math.min(1, dt * 4);
+            cameraY += (leader.y + 30 * Math.sin(leader.heading) - cameraY) * Math.min(1, dt * 4);
+            scene.centerCameraAt(cameraX, cameraY);
+        });
+        return () => {
+            eventContext.unregisterFrameHandler(handler);
+            for (const effects of carEffects) effects.destroy();
+            for (const car of cars) car.destroy();
+            finishLineSprite.destroy();
+        };
+    }
+
+    function createRaceScenery(course: Course, gates: Gate[]): Sprite {
+        tiles.setCurrentTilemap(course.tilemap);
+        const finishLineSprite = sprites.create(racing.finishLine);
+        const position = gateCenter(gates[0]);
+        finishLineSprite.rotation = Math.atan2(
+            gates[0].end.y - gates[0].start.y,
+            gates[0].end.x - gates[0].start.x
+        );
+        finishLineSprite.x = position.x;
+        finishLineSprite.y = position.y;
+        scene.setBackgroundImage(racing.generateBackground());
+        scroller.scrollBackgroundWithCamera(scroller.CameraScrollMode.BothDirections);
+        return finishLineSprite;
     }
 }

@@ -22,6 +22,7 @@ namespace racing {
             public patternIndex: number = 0,
             public patternScrollDirection: PreviewScrollDirection = 0
         ) {
+            if (!tilemap) throw "Missing tilemap for " + name;
             if (previewColors.length !== 3) throw "Course preview colors must contain dark, medium, and light";
             for (const color of previewColors) {
                 if (color < 0 || color > 15 || color !== Math.floor(color)) {
@@ -55,7 +56,7 @@ namespace racing {
                 new Course(
                     Track.GreatBritain,
                     "Great Britain",
-                    tilemap`great_britain`,
+                    tilemap`greatbritain`,
                     trackWaypoints.greatbritain,
                     trackCenterlines.greatbritain,
                     trackRoadWidths.greatbritain,

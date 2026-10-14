@@ -79,6 +79,14 @@ namespace racing {
         return min + (stat / STAT_MAX) * (max - min);
     }
 
+    export interface AutoDriveProfile {
+        speedRatio: number;
+        cornerSlowdown: number;
+        lookaheadSeconds: number;
+        steeringGain: number;
+        laneOffset: number;
+    }
+
     export class Car extends sprites.ExtendableSprite {
         heading = 0;
         speed = 0;
@@ -96,6 +104,7 @@ namespace racing {
         private autoDriveCenters: util.Point[];
         private autoDriveSegment = 0;
         private autoDriveTurnRate = 0;
+        private autoDriveProfile: AutoDriveProfile;
 
         constructor(
             public readonly stats: RacerStats,
@@ -203,10 +212,11 @@ namespace racing {
             this.setImage(this.frames[frameIndex]);
         }
 
-        startAutoDrive(gates: Gate[]) {
+        startAutoDrive(gates: Gate[], profile?: AutoDriveProfile) {
             this.controlEnabled = false;
             this.controlState = 0;
             this.autoDriveTurnRate = 0;
+            this.autoDriveProfile = profile;
             this.autoDriveCenters = getTrackCenterline(gates);
             let nearestDistance = Infinity;
             for (let i = 0; i < this.autoDriveCenters.length; i++) {
@@ -225,6 +235,7 @@ namespace racing {
 
         private updateAutoDrive(deltaTimeMillis: number) {
             const centers = this.autoDriveCenters;
+            const profile = this.autoDriveProfile;
             const reach = Math.max(3, this.speed * deltaTimeMillis / 1000);
             for (let i = 0; i < centers.length; i++) {
                 const start = centers[this.autoDriveSegment];
@@ -241,7 +252,8 @@ namespace racing {
             const progress = Math.max(0, Math.min(1, getSegmentProgress(this, start, end)));
             let targetX = start.x + (end.x - start.x) * progress;
             let targetY = start.y + (end.y - start.y) * progress;
-            let lookahead = Math.max(24, Math.max(Math.abs(this.speed) * 0.6, reach * 2));
+            let lookahead = Math.max(24, Math.max(Math.abs(this.speed)
+                * (profile ? profile.lookaheadSeconds : 0.6), reach * 2));
             for (let i = 0; i < centers.length; i++) {
                 const next = centers[(segment + 1) % centers.length];
                 const dx = next.x - targetX;
@@ -257,10 +269,21 @@ namespace racing {
                 targetY = next.y;
                 segment = (segment + 1) % centers.length;
             }
+            if (profile && profile.laneOffset) {
+                const laneStart = centers[segment];
+                const laneEnd = centers[(segment + 1) % centers.length];
+                const dx = laneEnd.x - laneStart.x;
+                const dy = laneEnd.y - laneStart.y;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                if (length > 0) {
+                    targetX -= dy / length * profile.laneOffset;
+                    targetY += dx / length * profile.laneOffset;
+                }
+            }
             const targetHeading = Math.atan2(targetY - this.y, targetX - this.x);
             const headingError = mathUtils.angleDifference(targetHeading, this.heading);
             const targetTurnRate = Math.max(-this.stats.turnRate,
-                Math.min(this.stats.turnRate, headingError * 2));
+                Math.min(this.stats.turnRate, headingError * (profile ? profile.steeringGain : 2)));
             this.autoDriveTurnRate = changeSpeed(this.autoDriveTurnRate, targetTurnRate,
                 this.stats.turnRate * 4, deltaTimeMillis);
             this.heading = mathUtils.clampRadians(
@@ -268,7 +291,14 @@ namespace racing {
             );
 
             const cornerStrength = Math.min(1, Math.abs(headingError) / (Math.PI / 2));
-            const targetSpeed = this.stats.topSpeed * 0.6 * (1 - cornerStrength * 0.4);
+            const targetSpeed = this.stats.topSpeed * (profile ? profile.speedRatio : 0.6)
+                * (1 - cornerStrength * (profile ? profile.cornerSlowdown : 0.4));
+            this.controlState = this.speed > targetSpeed
+                ? ControlStateFlag.BrakingOn : ControlStateFlag.AccelerationOn;
+            if (Math.abs(this.autoDriveTurnRate) > this.stats.turnRate * 0.1) {
+                this.controlState |= this.autoDriveTurnRate < 0
+                    ? ControlStateFlag.TurnLeftOn : ControlStateFlag.TurnRightOn;
+            }
             this.speed = changeSpeed(this.speed, targetSpeed,
                 this.speed > targetSpeed ? this.stats.deceleration : this.stats.acceleration,
                 deltaTimeMillis);

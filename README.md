@@ -17,3 +17,16 @@ game. A learner's program can start with just:
 ```blocks
 racing.startGame()
 ```
+
+## Regenerating track previews
+
+After editing course palettes, patterns, scrolling directions, or track geometry:
+
+```sh
+node tracks/create-track-previews.js
+makecode build --java-script
+```
+
+Commit `track-previews.g.ts` and `track-previews.g.jres` with the source changes.
+The dependency-free generator bakes the scrolling/wobbling menu animations;
+CI checks that these assets are current. See [track preview settings](docs/start-game.md#track-previews).

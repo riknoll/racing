@@ -1,4 +1,33 @@
 namespace racing.effects {
+    export class CarEffects {
+        private dustSource: particles.ParticleSource;
+        private tireTrackSource: particles.ParticleSource;
+        private offroadTireTrackSource: particles.ParticleSource;
+
+        constructor(private car: racing.Car) {
+            this.dustSource = createDustSource(car);
+            this.tireTrackSource = createTireTrackSource(car);
+            this.offroadTireTrackSource = createOffroadTireTrackSource(car);
+            this.update();
+        }
+
+        update(): void {
+            const offroad = this.car.isOffRoad();
+            (this.dustSource.factory as DustFactory).offroad = offroad;
+            const tireTracks = this.tireTrackSource.factory as TireTrackFactory;
+            tireTracks.braking = this.car.isBraking();
+            tireTracks.offroad = offroad;
+            tireTracks.sharpTurning = this.car.isSharpTurning();
+            (this.offroadTireTrackSource.factory as TireTrackFactory).offroad = offroad;
+        }
+
+        destroy(): void {
+            this.dustSource.destroy();
+            this.tireTrackSource.destroy();
+            this.offroadTireTrackSource.destroy();
+        }
+    }
+
     export class DustFactory extends particles.ParticleFactory {
         private colors = [14, 13, 1, 11];
 

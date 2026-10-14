@@ -1419,18 +1419,28 @@ const compactTileNames = [
 
 function jresImage(image, colors) {
     const pixels = colorizeTile(image, colors)
-    const bytes = Buffer.alloc(8 + 16 * 8)
+    return encodeImage([...pixels.replace(/\n/g, "")].map(color => Number.parseInt(color, 16)), 16, 16).toString("base64")
+}
+
+function encodeImage(pixels, width, height) {
+    if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 ||
+        width > 65535 || height > 65535 || pixels.length !== width * height) {
+        throw new Error("Invalid image dimensions")
+    }
+    const stride = Math.ceil(height / 8) * 4
+    const bytes = Buffer.alloc(8 + width * stride)
     bytes[0] = 0x87
     bytes[1] = 4
-    bytes.writeUInt16LE(16, 2)
-    bytes.writeUInt16LE(16, 4)
-    for (let y = 0; y < 16; y++) {
-        for (let x = 0; x < 16; x++) {
-            const color = Number.parseInt(pixels[y * 17 + x], 16)
-            bytes[8 + x * 8 + (y >> 1)] |= color << ((y & 1) * 4)
+    bytes.writeUInt16LE(width, 2)
+    bytes.writeUInt16LE(height, 4)
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const color = pixels[y * width + x]
+            if (!Number.isInteger(color) || color < 0 || color > 15) throw new Error("Invalid image color")
+            bytes[8 + x * stride + (y >> 1)] |= color << ((y & 1) * 4)
         }
     }
-    return bytes.toString("base64")
+    return bytes
 }
 
 function withTrackContext(name, action) {
@@ -1593,5 +1603,5 @@ if (require.main === module) {
 
 module.exports = {
     parsePath, extractTrack, extractFinish, simplifyLoop, separateTrack, snapDirections,
-    rasterizePixels, makeTilemap, makeWaypoints, makeGates, formatTilemap, formatBatch,
+    rasterizePixels, makeTilemap, makeWaypoints, makeGates, formatTilemap, formatBatch, encodeImage,
 }
