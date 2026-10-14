@@ -56,7 +56,7 @@
         "arcade-timer-sprite": "github:riknoll/arcade-timer-sprite#v0.0.3",
         "arcade-fancy-text": "github:riknoll/arcade-fancy-text#v0.2.2",
         "arcade-mini-menu": "pub:60466-34738-60159-51012",
-        "racing (font)": "pub:50218-03224-90813-22938"
+        "racing (font)": "pub:76718-87394-47710-89573"
     },
     "testDependencies": {}
 }

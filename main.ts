@@ -1,5 +1,5 @@
 // Use exact menu labels; "Bot 1" also matches its changing slot description.
-// Examples: ["Race", "Monaco", "2 laps"], ["View AI", "Bot 1", "Continue", "Back"].
+// Examples: ["Race", "Monaco", "LAPS: B", "Start"], ["View AI", "Bot 1", "Continue", "Back"].
 // "manual" pauses scripting for one menu. Exhausting the list restores normal UI.
 const MENU_TEST_SEQUENCE: string[] = [];
 const MENU_TEST_REPEAT = false;

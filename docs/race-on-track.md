@@ -1,7 +1,8 @@
 # Race on a track
 
 Start a race directly, without opening the menu. Choose Australia, Great Britain,
-Italy, Monaco, Netherlands, or USA, and **1-4 laps**.
+Italy, Monaco, Netherlands, or USA, and **1-4 laps**. This block keeps three
+opponents and Fast speed; the game menu offers configurable race options.
 
 ```sig
 racing.raceOnTrack(racing.Track.Monaco, 1)

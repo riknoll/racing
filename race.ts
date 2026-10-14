@@ -8,7 +8,20 @@ namespace racing {
         Italy
     }
 
-    export function startRace(course: Course, totalLaps: number, numOpponents: number) {
+    export enum RaceSpeed {
+        Slow,
+        Med,
+        Fast
+    }
+
+    export function startRace(course: Course, totalLaps: number, numOpponents: number, speed: RaceSpeed = 2) {
+        let speedStat: number;
+        switch (speed) {
+            case RaceSpeed.Slow: speedStat = 0; break;
+            case RaceSpeed.Med: speedStat = 50; break;
+            case RaceSpeed.Fast: speedStat = 100; break;
+            default: throw "Choose a valid race speed";
+        }
         game.pushScene();
         const track = course.createTrack();
         const gates = track.gates;
@@ -18,7 +31,7 @@ namespace racing {
         createRaceScenery(course, gates);
 
         const stats = new racing.RacerStats(
-                100,
+                speedStat,
                 100,
                 100,
                 100,

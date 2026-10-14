@@ -1,7 +1,7 @@
 # Start racing game
 
-Open the **Race / Train AI / View AI** menu. Players choose their track and laps
-in the game. Trained bot slots are restored from settings.
+Open the **Race / Train AI / View AI** menu. Players choose their track and race
+options in the game. Trained bot slots are restored from settings.
 
 The main menu plays a three-car demonstration on a randomly chosen race course
 behind its controls. It uses the normal autodrive, scenery, off-road dust, and
@@ -42,6 +42,56 @@ put setup blocks above it rather than below it.
 
 Importing the extension does not start the game automatically. The repository's
 `main.ts` is a test-only launcher, not part of the imported extension.
+
+## Race options
+
+After selecting a race track, configure **LAPS**, **OPPONENTS**, and **SPEED**.
+Up/down moves between rows; left/right cycles the selected row's values. Each
+row uses the racing font, with a left-aligned label and an equally sized,
+single-value mini-menu on the right. Value selectors use color 3 text
+to distinguish them from the labels. Pressing A on an option does not start the
+race: move to the final **START** row and press A. B returns to track selection
+without starting.
+
+Laps range from **1–4** (default 1), and opponents from **0–3** (default 3).
+Until the racing font has digits, both selectors display **A, B, C, D**:
+these represent 1, 2, 3, 4 laps and 0, 1, 2, 3 opponents, respectively.
+Speed offers **Slow**, **Med**, and **Fast**, with road top speeds of **70**,
+**135**, and **200 pixels/second** for both the player and opponents. Fast is
+the default and preserves the previous race speed. Training and the main-menu
+demonstration keep their existing driving settings.
+
+Speed values use **15x15** square placeholder icons, matching the racing font's
+height. All selectors share the same cell dimensions, sized using the actual
+font metrics. Replace `raceSpeedSlowIcon`, `raceSpeedMedIcon`, and
+`raceSpeedFastIcon` in `ui.ts` to supply the final artwork.
+
+Training uses the same options menu with just a Laps row and Start. It retains
+the existing default of three laps on Test Track and one on other courses.
+
+`racing.chooseOptionsMenu(title, options, confirmLabel, allowBack)` is reusable:
+each `MenuOption` has a `name`, nonempty `values`, an optional matching `icons`
+array, and an optional zero-based `initialSelection`. The last two function
+arguments default to `"START"` and `true`. The menu returns an array of selected
+value indices on confirmation, or `null` on Back. All value selectors use the
+same dimensions, calculated from the largest value; longer lists scroll
+vertically with their selectors.
+
+```typescript
+const values = racing.chooseOptionsMenu("OPTIONS", [
+    { name: "LAPS", values: ["A", "B", "C", "D"] },
+    { name: "OPPONENTS", values: ["A", "B", "C", "D"], initialSelection: 3 }
+])
+```
+
+Scripted menu choices use `OPTION: VALUE` entries followed by `Start`, for
+example `["Race", "Monaco", "LAPS: B", "OPPONENTS: B", "SPEED: Med", "Start"]`.
+Options not mentioned keep their defaults; `Back` cancels and `manual` switches
+to interactive selection with any scripted changes retained.
+
+TypeScript callers can also pass `racing.RaceSpeed.Slow`, `.Med`, or `.Fast` as
+the fourth argument to `racing.startRace(course, laps, opponents, speed)`.
+Omitting it retains Fast.
 
 ## Track previews
 

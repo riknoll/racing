@@ -29,12 +29,22 @@ namespace racing {
 
     function chooseRace(): void {
         const courses = getCourses();
+        const options: MenuOption[] = [
+            { name: "LAPS", values: ["1", "2", "3", "4"] },
+            { name: "OPPONENTS", values: ["0", "1", "2", "3"], initialSelection: 3 },
+            {
+                name: "SPEED",
+                values: ["Slow", "Med", "Fast"],
+                icons: [raceSpeedSlowIcon, raceSpeedMedIcon, raceSpeedFastIcon],
+                initialSelection: 2
+            }
+        ];
         while (true) {
             const selected = chooseTrackMenu("SELECT TRACK", courses);
             if (selected < 0) return;
-            const laps = chooseMenu("Choose laps", ["1 lap", "2 laps", "3 laps", "4 laps"]);
-            if (laps < 0) continue;
-            startRace(courses[selected], laps + 1, 3);
+            const values = chooseOptionsMenu("RACE OPTIONS", options);
+            if (!values) continue;
+            startRace(courses[selected], values[0] + 1, values[1], values[2]);
             return;
         }
     }
@@ -46,10 +56,11 @@ namespace racing {
         while (true) {
             const course = chooseTrackMenu("SELECT TRACK", courses);
             if (course < 0) return;
-            const laps = chooseMenu("Training laps", ["1 lap", "2 laps", "3 laps", "4 laps"],
-                true, undefined, course === 0 ? 2 : 0);
-            if (laps < 0) continue;
-            aiRacing.trainFromMenu(courses[course], slot, laps + 1);
+            const values = chooseOptionsMenu("TRAINING", [
+                { name: "LAPS", values: ["1", "2", "3", "4"], initialSelection: course === 0 ? 2 : 0 }
+            ]);
+            if (!values) continue;
+            aiRacing.trainFromMenu(courses[course], slot, values[0] + 1);
             return;
         }
     }
