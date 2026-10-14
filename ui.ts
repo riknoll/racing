@@ -501,7 +501,7 @@ namespace racing {
         `
     ];
 
-    export function drawSpeedometer(radius: number, x: number, y: number, speed: number, maxSpeed: number) {
+    export function drawSpeedometer(radius: number, x: number, y: number, speed: number, maxSpeed: number, accelerationRatio = 0) {
         screen.fillCircle(x, y, radius + 1, 12);
         screen.fillCircle(x, y, radius, 1);
         const progress = maxSpeed > 0 ? Math.max(0, Math.min(speed / maxSpeed, 1)) : 0;
@@ -539,6 +539,26 @@ namespace racing {
                 } else {
                     screen.setPixel(x + dx, y + dy, 11);
                 }
+            }
+        }
+
+        const barBottom = outerRadius - 2;
+        const accelerationHalfWidth = Math.min(innerRadius - 2,
+            Math.floor(Math.sqrt(outerRadius * outerRadius - barBottom * barBottom)));
+        if (accelerationHalfWidth > 1) {
+            const barTop = y + innerRadius + 1;
+            const barHeight = outerRadius - innerRadius - 2;
+            const segmentWidth = 3;
+            const segmentStride = segmentWidth + 1;
+            const segmentCount = Math.idiv(accelerationHalfWidth * 2, segmentStride);
+            const barWidth = segmentCount * segmentStride + 1;
+            const barLeft = x - Math.idiv(barWidth, 2);
+            const filledSegments = Math.round(Math.min(Math.abs(accelerationRatio), 1) * segmentCount);
+            screen.fillRect(barLeft, barTop, barWidth, barHeight, 12);
+            for (let i = 0; i < segmentCount; i++) {
+                const filled = accelerationRatio > 0 ? i < filledSegments : i >= segmentCount - filledSegments;
+                screen.fillRect(barLeft + 1 + i * segmentStride, barTop + 1, segmentWidth, barHeight - 2,
+                    filled ? (accelerationRatio > 0 ? 7 : 2) : 11);
             }
         }
 

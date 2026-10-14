@@ -90,6 +90,7 @@ namespace racing {
     export class Car extends sprites.ExtendableSprite {
         heading = 0;
         speed = 0;
+        acceleration = 0;
         controlState = 0;
         currentGateIndex = 0;
         currentLap = 0;
@@ -184,12 +185,14 @@ namespace racing {
         }
 
         update(deltaTimeMillis: number) {
+            const previousSpeed = this.speed;
             if (this.autoDriveCenters) {
                 this.updateAutoDrive(deltaTimeMillis);
             }
             else {
                 this.updateDriving(deltaTimeMillis);
             }
+            this.acceleration = deltaTimeMillis > 0 ? (this.speed - previousSpeed) * 1000 / deltaTimeMillis : 0;
             this.updateSharpTurn(deltaTimeMillis);
 
             this.vx = this.speed * Math.cos(this.heading);

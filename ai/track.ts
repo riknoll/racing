@@ -39,6 +39,7 @@ namespace aiRacing {
             const end = this.centers[0];
             car.heading = Math.atan2(end.y - start.y, end.x - start.x);
             car.speed = 0;
+            car.acceleration = 0;
             car.vx = 0;
             car.vy = 0;
             car.controlState = 0;

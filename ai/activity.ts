@@ -142,7 +142,7 @@ namespace aiRacing {
         if (initialized) return;
         initialized = true;
         tiles.setCurrentTilemap(course.tilemap);
-        scene.setBackgroundImage(racing.generateBackground());
+        scene.setBackgroundImage(racing.generateBackground(course.backgroundTileset));
         scroller.scrollBackgroundWithCamera(scroller.CameraScrollMode.BothDirections);
         track = course.createTrack();
         game.onUpdate(() => {

@@ -61,7 +61,7 @@ namespace aiRacing {
         let showingMessage = false;
         try {
             tiles.setCurrentTilemap(selectedCourse.tilemap);
-            scene.setBackgroundImage(racing.generateBackground());
+            scene.setBackgroundImage(racing.generateBackground(selectedCourse.backgroundTileset));
             scroller.scrollBackgroundWithCamera(scroller.CameraScrollMode.BothDirections);
             racing.releaseMenuButtons();
             watch = new LapWatch(bot, selectedCourse);

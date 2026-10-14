@@ -18,7 +18,7 @@ function readCourses() {
     const source = read("courses.ts")
     const geometry = read("ai/geometry.g.ts")
     const training = read("ai/training-track.g.ts")
-    const constructor = /new Course\(\s*(Track\.(\w+)|undefined)\s*,\s*("(?:[^"\\]|\\.)*")\s*,\s*(?:tilemap`[^`]+`|aiRacing\.getTestTrackMap\(\))\s*,\s*[\w.]+\s*,\s*([\w.]+)\s*,\s*([\w.]+)\s*,\s*(\[[^\]]*\])\s*(?:,\s*(\d+)\s*)?(?:,\s*PreviewScrollDirection\.(\w+)\s*)?\)/g
+    const constructor = /new Course\(\s*(Track\.(\w+)|undefined)\s*,\s*("(?:[^"\\]|\\.)*")\s*,\s*(?:tilemap`[^`]+`|aiRacing\.getTestTrackMap\(\))\s*,\s*[\w.]+\s*,\s*([\w.]+)\s*,\s*([\w.]+)\s*,\s*(\[[^\]]*\])\s*(?:,\s*(\d+)\s*)?(?:,\s*PreviewScrollDirection\.(\w+)\s*)?(?:,\s*BackgroundTileset\.\w+\s*)?\)/g
     const courses = [...source.matchAll(constructor)].map(match => {
         const [, , track, name, centerSymbol, widthSymbol, colors, pattern, direction] = match
         const symbol = centerSymbol.split(".").at(-1)

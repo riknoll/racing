@@ -59,6 +59,7 @@ namespace aiRacing {
             this.controlEnabled = false;
             this.controlState = 0;
             this.speed = 0;
+            this.acceleration = 0;
             this.vx = 0;
             this.vy = 0;
         }

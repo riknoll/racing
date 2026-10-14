@@ -217,7 +217,12 @@ namespace racing {
                 if (index < valueMenus.length) valueMenus[index].moveSelection(miniMenu.MoveDirection.Right);
             });
             menu.onButtonPressed(miniMenu.Button.A, (value, index) => {
-                if (index !== options.length) return;
+                if (index !== options.length) {
+                    for (let row = index; row < options.length; row++) {
+                        menu.moveSelection(miniMenu.MoveDirection.Down);
+                    }
+                    return;
+                }
                 confirmed = true;
                 chosen = true;
                 menu.setButtonEventsEnabled(false);

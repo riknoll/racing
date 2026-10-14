@@ -49,9 +49,10 @@ After selecting a race track, configure **LAPS**, **OPPONENTS**, and **SPEED**.
 Up/down moves between rows; left/right cycles the selected row's values. Each
 row uses the racing font, with a left-aligned label and an equally sized,
 single-value mini-menu on the right. Value selectors use color 3 text
-to distinguish them from the labels. Pressing A on an option does not start the
-race: move to the final **START** row and press A. B returns to track selection
-without starting.
+to distinguish them from the labels. Pressing A on an option selects the final
+**START** row; pressing A again starts the race. Double-tap A to accept the
+defaults without changing any values. B returns to track selection without
+starting.
 
 Laps range from **1–4** (default 1), and opponents from **0–3** (default 3).
 Until the racing font has digits, both selectors display **A, B, C, D**:
@@ -92,6 +93,32 @@ to interactive selection with any scripted changes retained.
 TypeScript callers can also pass `racing.RaceSpeed.Slow`, `.Med`, or `.Fast` as
 the fourth argument to `racing.startRace(course, laps, opponents, speed)`.
 Omitting it retains Fast.
+
+## Course background tilesets
+
+Each `Course` has a fixed `backgroundTileset`, set as its final constructor
+argument in `courses.ts`. Choose a named `racing.BackgroundTileset`: `Grass`,
+`DarkGrass`, `DryGrass`, `Stone`, `DarkStone`, `Sand`, or `Checkerboard`.
+For example, the Australia entry inside the `racing` namespace uses:
+
+```typescript
+new Course(
+    Track.Australia, "Australia", tilemap`australia`,
+    trackWaypoints.australia, trackCenterlines.australia, trackRoadWidths.australia,
+    [14, 4, 5], 2, PreviewScrollDirection.N, BackgroundTileset.Sand
+)
+```
+
+Initial assignments are Australia **Sand**, Great Britain **DarkGrass**,
+Italy **Grass**, Monaco **Stone**, Netherlands **Grass**, USA **DryGrass**,
+and Test Track **Checkerboard**. Races, the main-menu demonstration, training,
+and watching a bot all use the selected course's tileset. Tile placement within
+that tileset is still randomized; the tileset itself is no longer random.
+
+Omitting the argument defaults to `Grass`, as does calling
+`racing.generateBackground()` without a tileset. This setting is independent of
+the menu preview's colors and pattern, so changing only the background tileset
+does not require regenerating preview assets.
 
 ## Track previews
 
@@ -146,7 +173,7 @@ Unsupported constructor expressions or invalid settings stop generation with an 
 
 Each course's `patternScrollDirection` selects a
 `racing.PreviewScrollDirection`: `N`, `E`, `S`, `W`, `NE`, `NW`, `SE`, or `SW`.
-It is the final optional constructor argument and defaults to `N`.
+It defaults to `N`; the optional `backgroundTileset` argument follows it.
 Built-in directions are Australia N, Great Britain E, Italy S, Monaco W,
 Netherlands S, USA W, and Test Track SW.
 

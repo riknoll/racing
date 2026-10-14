@@ -1,4 +1,14 @@
 namespace racing {
+    export enum BackgroundTileset {
+        Grass,
+        DarkGrass,
+        DryGrass,
+        Stone,
+        DarkStone,
+        Sand,
+        Checkerboard
+    }
+
     let tilesets = [
         [
             img`
@@ -575,10 +585,13 @@ namespace racing {
     ];
 
 
-    export function generateBackground() {
+    export function generateBackground(tileset: BackgroundTileset = 0) {
+        if (tileset < 0 || tileset >= tilesets.length || tileset !== Math.floor(tileset)) {
+            throw "Choose a valid background tileset";
+        }
         const i = image.create(160, 128);
 
-        const tiles = tilesets[Math.floor(Math.random() * tilesets.length)];
+        const tiles = tilesets[tileset];
 
         for (let x = 0; x < 160; x += 16) {
             for (let y = 0; y < 128; y += 16) {

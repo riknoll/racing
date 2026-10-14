@@ -92,6 +92,7 @@ namespace racing {
         const lapTimes: number[] = [];
         const lapTimeSprites: timerSprite.TimerSprite[] = [];
         let finished = false;
+        let displayedAccelerationRatio = 0;
 
         const eventContext = game.currentScene().eventContext;
 
@@ -112,8 +113,17 @@ namespace racing {
             );
 
             racing.drawLapIndicator(135, 0, Math.min(player.currentLap, totalLaps), totalLaps);
-            racing.drawSpeedometer(19, 20, 99, player.speed, player.stats.topSpeed);
+            racing.drawSpeedometer(19, 20, 99, player.speed, player.stats.topSpeed,
+                displayedAccelerationRatio);
             racing.drawPlacemarker(135, 95, placement);
+        });
+
+        const accelerationHandler = eventContext.registerFrameHandler(scene.PRE_RENDER_UPDATE_PRIORITY + 1, () => {
+            const limit = player.acceleration < 0 ? player.stats.deceleration : player.stats.acceleration;
+            const target = Math.max(-1, Math.min(1, player.acceleration / limit));
+            const blend = 1 - Math.exp(-eventContext.deltaTimeMillis / 120);
+            displayedAccelerationRatio += (target - displayedAccelerationRatio) * blend;
+            if (Math.abs(target - displayedAccelerationRatio) < 0.01) displayedAccelerationRatio = target;
         });
 
         const handler = eventContext.registerFrameHandler(scene.UPDATE_PRIORITY, () => {
@@ -203,6 +213,7 @@ namespace racing {
             minimapRenderable.destroy();
             hudRenderable.destroy();
             eventContext.unregisterFrameHandler(handler);
+            eventContext.unregisterFrameHandler(accelerationHandler);
             countdownSprite.destroy();
             carEffects.destroy();
             game.popScene();
@@ -309,7 +320,7 @@ namespace racing {
         );
         finishLineSprite.x = position.x;
         finishLineSprite.y = position.y;
-        scene.setBackgroundImage(racing.generateBackground());
+        scene.setBackgroundImage(racing.generateBackground(course.backgroundTileset));
         scroller.scrollBackgroundWithCamera(scroller.CameraScrollMode.BothDirections);
         return finishLineSprite;
     }

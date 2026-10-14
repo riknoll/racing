@@ -20,7 +20,8 @@ namespace racing {
             public readonly roadWidth: number,
             public readonly previewColors: number[],
             public patternIndex: number = 0,
-            public patternScrollDirection: PreviewScrollDirection = 0
+            public patternScrollDirection: PreviewScrollDirection = 0,
+            public readonly backgroundTileset: BackgroundTileset = 0
         ) {
             if (!tilemap) throw "Missing tilemap for " + name;
             if (previewColors.length !== 3) throw "Course preview colors must contain dark, medium, and light";
@@ -51,7 +52,8 @@ namespace racing {
                     trackRoadWidths.australia,
                     [14, 4, 5],
                     2,
-                    PreviewScrollDirection.N
+                    PreviewScrollDirection.N,
+                    BackgroundTileset.Sand
                 ),
                 new Course(
                     Track.GreatBritain,
@@ -62,7 +64,8 @@ namespace racing {
                     trackRoadWidths.greatbritain,
                     [8, 6, 9],
                     4,
-                    PreviewScrollDirection.E
+                    PreviewScrollDirection.E,
+                    BackgroundTileset.DarkGrass
                 ),
                 new Course(
                     Track.Italy,
@@ -73,7 +76,8 @@ namespace racing {
                     trackRoadWidths.italy,
                     [4, 5, 1],
                     3,
-                    PreviewScrollDirection.S
+                    PreviewScrollDirection.S,
+                    BackgroundTileset.Grass
                 ),
                 new Course(
                     Track.Monaco,
@@ -84,7 +88,8 @@ namespace racing {
                     trackRoadWidths.monaco,
                     [6, 7, 9],
                     14,
-                    PreviewScrollDirection.W
+                    PreviewScrollDirection.W,
+                    BackgroundTileset.Stone
                 ),
                 new Course(
                     Track.Netherlands,
@@ -95,7 +100,8 @@ namespace racing {
                     trackRoadWidths.netherlands,
                     [8, 6, 9],
                     9,
-                    PreviewScrollDirection.S
+                    PreviewScrollDirection.S,
+                    BackgroundTileset.Grass
                 ),
                 new Course(
                     Track.USA,
@@ -106,7 +112,8 @@ namespace racing {
                     trackRoadWidths.usa,
                     [14, 2, 3],
                     10,
-                    PreviewScrollDirection.W
+                    PreviewScrollDirection.W,
+                    BackgroundTileset.DryGrass
                 )
             ];
         }
@@ -116,7 +123,8 @@ namespace racing {
     export function getTrainingCourses(): Course[] {
         if (!testTrack) {
             testTrack = new Course(undefined, "Test Track", aiRacing.getTestTrackMap(), aiRacing.TEST_TRACK_GATES,
-                aiRacing.TEST_TRACK_CENTERS, aiRacing.TEST_TRACK_WIDTH, [12, 14, 4], 6, PreviewScrollDirection.SW);
+                aiRacing.TEST_TRACK_CENTERS, aiRacing.TEST_TRACK_WIDTH, [12, 14, 4], 6, PreviewScrollDirection.SW,
+                BackgroundTileset.Checkerboard);
         }
         return [testTrack].concat(getCourses());
     }
