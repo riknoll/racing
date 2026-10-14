@@ -25,8 +25,7 @@ namespace racing {
             picture.fill(15);
             scene.setBackgroundImage(picture);
             textSprites.push(createMenuText(title.toUpperCase(), 1, customFont.racing, 1));
-            textSprites.push(createMenuText(allowBack ? "< > MOVE A SELECT B BACK" : "< > MOVE A SELECT",
-                116, fancyText.tiny_4, 1));
+            textSprites.push(createMenuHelp(picture, true, allowBack));
 
             const previewFrames = courses.map(course => trackPreviewAnimations.forCourse(course));
             const previewItems = courses.map((course, index) =>
@@ -59,7 +58,7 @@ namespace racing {
             miniMenu.setDimensions(previewMenu, TRACK_MENU_WIDTH, TRACK_PREVIEW_FRAME_SIZE);
             miniMenu.setDimensions(nameMenu, TRACK_MENU_WIDTH, customFont.racing.lineHeight + 2);
             previewMenu.left = nameMenu.left = (screen.width - TRACK_MENU_WIDTH) / 2;
-            previewMenu.top = 3 + customFont.racing.lineHeight;
+            previewMenu.top = 1 + customFont.racing.lineHeight;
             nameMenu.top = previewMenu.bottom;
             for (let i = 0; i < initialSelection; i++) {
                 miniMenu.moveSelection(previewMenu, miniMenu.MoveDirection.Right);
@@ -124,7 +123,6 @@ namespace racing {
             const picture = image.create(160, 120);
             if (setupBackground) {
                 picture.fillRect(5, 0, 150, 20, 15);
-                picture.fillRect(5, 109, 150, 9, 15);
             } else {
                 picture.fill(15);
             }
@@ -136,8 +134,7 @@ namespace racing {
                 scene.setBackgroundImage(picture);
             }
             textSprites.push(createMenuText(title.toUpperCase(), 1, customFont.racing, 1));
-            textSprites.push(createMenuText(allowBack ? "^ V MOVE A SELECT B BACK" : "^ V MOVE A SELECT",
-                111, fancyText.tiny_4, 1));
+            textSprites.push(createMenuHelp(picture, false, allowBack));
 
             menu = miniMenu.createMenuFromArray(choices.map((choice, index) =>
                 miniMenu.createMenuItem(choice, icons ? icons[index] : undefined)));
@@ -202,6 +199,31 @@ namespace racing {
         getWidth(style: miniMenu.Style): number {
             return TRACK_MENU_WIDTH;
         }
+    }
+
+    function createMenuHelp(picture: Image, horizontal: boolean, allowBack: boolean): fancyText.TextSprite {
+        const arrows = horizontal ? img`
+            . . 1 . . . . . 1 . .
+            . 1 1 . . . . . 1 1 .
+            1 1 1 1 1 . 1 1 1 1 1
+            . 1 1 . . . . . 1 1 .
+            . . 1 . . . . . 1 . .
+        ` : img`
+            . . 1 . . . . . 1 . .
+            . 1 1 1 . . . . 1 . .
+            1 1 1 1 1 . 1 1 1 1 1
+            . . 1 . . . . 1 1 1 .
+            . . 1 . . . . . 1 . .
+        `;
+        const bottom = picture.height - 1;
+        const height = Math.max(arrows.height, fancyText.tiny_4.lineHeight);
+        picture.fillRect(0, bottom - height - 1, picture.width, height + 2, 15);
+        const text = createMenuText(allowBack ? "MOVE A SELECT B BACK" : "MOVE A SELECT",
+            bottom - fancyText.tiny_4.lineHeight, fancyText.tiny_4, 1);
+        const left = Math.floor((picture.width - arrows.width - 3 - text.width) / 2);
+        picture.drawTransparentImage(arrows, left, bottom - arrows.height);
+        text.left = left + arrows.width + 3;
+        return text;
     }
 
     function createMenuText(text: string, y: number, font: fancyText.BaseFont, color: number): fancyText.TextSprite {

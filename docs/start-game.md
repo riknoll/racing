@@ -22,8 +22,10 @@ Menu titles and control hints use **arcade-fancy-text** sprites,
 centered and fixed to the screen above menu items and the demonstration race.
 Titles use `customFont.racing` in white uppercase at its native size, one pixel
 below the top of the screen, on one line without wrapping or shrinking long labels.
-Menus have no screen border or subtitles; control hints use uppercase in their
-compact font. These sprites are destroyed when their menu closes.
+Menus have no screen border or subtitles; control hints use directional arrow
+icons followed by uppercase text in their compact font. All menus share a
+bottom-aligned help strip with one clear pixel above and below the icons and
+text. These sprites are destroyed when their menu closes.
 
 ```sig
 racing.startGame()
