@@ -15,7 +15,11 @@ racing.raceOnTrack(racing.Track.Monaco, 2)
 ```
 
 The player drives with the normal racing controls and instruments. Completed-lap
-timers stack above the position indicator on the right. Any trained
+timers stack above the position indicator on the right. A pink chevron centered
+20 pixels ahead of the car uses two thick lines meeting at 80 degrees,
+with a sharp mitered point, a single-pixel color-12 outer contour, and no trailing dots. Its corner points in
+the player's movement direction, or their heading when stopped.
+Any trained
 saved bots join the race without learning new examples. The starting countdown
 uses the outlined racing font with white letters and a color-12 outline,
 displaying `3`, `2`, `1`, then `GO`. After the player finishes

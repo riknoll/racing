@@ -102,6 +102,7 @@ namespace racing {
 
         private sharpTurnDirection = 0;
         private sharpTurnMillis = 0;
+        private reticleMask: Image;
         private autoDriveCenters: util.Point[];
         private autoDriveSegment = 0;
         private autoDriveTurnRate = 0;
@@ -312,11 +313,41 @@ namespace racing {
 
             if (this.controlEnabled) {
                 const camera = game.currentScene().camera;
-                screen.setPixel(
-                    this.x + 20 * Math.cos(this.heading) - camera.drawOffsetX,
-                    this.y + 20 * Math.sin(this.heading) - camera.drawOffsetY,
-                    2
-                );
+                const x = this.x - camera.drawOffsetX;
+                const y = this.y - camera.drawOffsetY;
+                const direction = this.vx !== 0 || this.vy !== 0 ? Math.atan2(this.vy, this.vx) : this.heading;
+                const dx = Math.cos(direction);
+                const dy = Math.sin(direction);
+                const centerX = Math.round(x + 20 * dx);
+                const centerY = Math.round(y + 20 * dy);
+                const halfAngle = 40 * Math.PI / 180;
+                const sinHalf = Math.sin(halfAngle);
+                const cosHalf = Math.cos(halfAngle);
+                const armLength = 7 / cosHalf;
+                const radius = 9;
+                if (!this.reticleMask) this.reticleMask = image.create(radius * 2 + 1, radius * 2 + 1);
+                const mask = this.reticleMask;
+                mask.fill(0);
+                // Let the two strokes meet at their miter rather than cutting off their shared tip.
+                for (let row = 0; row < mask.height; row++) {
+                    for (let col = 0; col < mask.width; col++) {
+                        const forward = (col - radius) * dx + (row - radius) * dy;
+                        const sideways = Math.abs(-(col - radius) * dy + (row - radius) * dx);
+                        const across = (4 - forward) * sinHalf - sideways * cosHalf;
+                        const along = (4 - forward) * cosHalf + sideways * sinHalf;
+                        if (Math.abs(across) <= 1 && along <= armLength) mask.setPixel(col, row, 1);
+                    }
+                }
+                for (let row = 0; row < mask.height; row++) {
+                    for (let col = 0; col < mask.width; col++) {
+                        const filled = mask.getPixel(col, row);
+                        const border = !filled && (mask.getPixel(col - 1, row) || mask.getPixel(col + 1, row)
+                            || mask.getPixel(col, row - 1) || mask.getPixel(col, row + 1));
+                        if (filled || border) {
+                            screen.setPixel(centerX + col - radius, centerY + row - radius, filled ? 3 : 12);
+                        }
+                    }
+                }
             }
 
         }
