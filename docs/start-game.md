@@ -161,6 +161,18 @@ names fit without clipping. The names do not wobble; both rows retain equal
 centered in its item. Menu titles use the same racing font; help text keeps its
 compact font.
 
+Tracks with a saved best lap also show a stopped compact timer to the right of
+their preview, just above the name, with a compact-font `BEST LAP` label above it.
+The label and timer have transparent backgrounds and align with the right edge
+of the track-name row, with the timer centered beneath the label. Neither overlaps
+the preview image.
+The timer displays the saved best lap in
+minutes, seconds, and hundredths without counting. Timers and labels follow the same
+horizontal scrolling as their preview items, including incoming and outgoing
+tracks during transitions, and are clipped to the carousel. Tracks without a
+saved best lap, including Test Track, show neither a timer nor a label. Both are
+created when the menu opens and destroyed when it closes.
+
 ```typescript
 const preview = racing.createTrackPreview(racing.getCourses()[0])
 ```

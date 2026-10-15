@@ -20,8 +20,12 @@ namespace racing {
         if (initialSelection < 0 || initialSelection >= courses.length || initialSelection !== Math.floor(initialSelection)) {
             throw "Invalid initial track menu selection";
         }
-        let previewMenu: Sprite;
-        let nameMenu: Sprite;
+        let previewMenu: miniMenu.MenuSprite;
+        let nameMenu: miniMenu.MenuSprite;
+        let disposeTimerLayout: () => void;
+        let timerClip: scene.Renderable;
+        const bestLapTimers: timerSprite.TimerSprite[] = [];
+        const bestLapLabels: fancyText.TextSprite[] = [];
         const textSprites: fancyText.TextSprite[] = [];
         let selected = -1;
         let chosen = false;
@@ -37,8 +41,10 @@ namespace racing {
             const previewFrames = courses.map(course => trackPreviewAnimations.forCourse(course));
             const previewItems = courses.map((course, index) =>
                 new TrackMenuItem(course.name, previewFrames[index][0]));
-            previewMenu = miniMenu.createMenuFromArray(previewItems);
-            nameMenu = miniMenu.createMenuFromArray(courses.map(course => new TrackMenuItem(course.name.toUpperCase())));
+            previewMenu = new miniMenu.MenuSprite();
+            previewMenu.setMenuItems(previewItems);
+            nameMenu = new miniMenu.MenuSprite();
+            nameMenu.setMenuItems(courses.map(course => new TrackMenuItem(course.name.toUpperCase())));
             for (const menu of [previewMenu, nameMenu]) {
                 miniMenu.setButtonEventsEnabled(menu, false);
                 menu.setFlag(SpriteFlag.Ghost, true);
@@ -67,6 +73,49 @@ namespace racing {
             previewMenu.left = nameMenu.left = (screen.width - TRACK_MENU_WIDTH) / 2;
             previewMenu.top = 1 + customFont.racing.lineHeight;
             nameMenu.top = previewMenu.bottom;
+            for (const course of courses) {
+                if (course.trackId === undefined || !hasStorageKey(course.trackId, StorageKey.BestLap)) {
+                    bestLapTimers.push(undefined);
+                    bestLapLabels.push(undefined);
+                    continue;
+                }
+                const timer = createTimer("compact");
+                bestLapTimers.push(timer);
+                timer.setColors(0, 0);
+                timer.setFlag(SpriteFlag.Ghost, true);
+                timer.setRunning(false);
+                timer.setElapsedTime(readStorage(course.trackId, StorageKey.BestLap));
+                const label = createMenuText("BEST LAP", 0, fancyText.tiny_4, 1);
+                textSprites.push(label);
+                bestLapLabels.push(label);
+                label.z = timer.z;
+            }
+            if (bestLapTimers.some(timer => !!timer)) {
+                const layoutTimers = () => {
+                    for (let i = 0; i < bestLapTimers.length; i++) {
+                        const timer = bestLapTimers[i];
+                        if (!timer) continue;
+                        const label = bestLapLabels[i];
+                        const width = Math.max(timer.width, label.width);
+                        const left = nameMenu.left + (i + 1) * TRACK_MENU_WIDTH - (previewMenu.xScroll | 0) - width;
+                        timer.left = left + Math.floor((width - timer.width) / 2);
+                        timer.bottom = previewMenu.bottom - 2;
+                        timer.setFlag(SpriteFlag.Invisible, timer.right <= previewMenu.left || timer.left >= previewMenu.right);
+                        label.left = left + Math.floor((width - label.width) / 2);
+                        label.bottom = timer.top - 1;
+                        label.setFlag(SpriteFlag.Invisible, label.right <= previewMenu.left || label.left >= previewMenu.right);
+                    }
+                };
+                layoutTimers();
+                const eventContext = game.currentScene().eventContext;
+                const handler = eventContext.registerFrameHandler(scene.PRE_RENDER_UPDATE_PRIORITY + 1, layoutTimers);
+                disposeTimerLayout = () => eventContext.unregisterFrameHandler(handler);
+                timerClip = scene.createRenderable(101, target => {
+                    target.fillRect(0, previewMenu.top, previewMenu.left, previewMenu.height, 15);
+                    target.fillRect(previewMenu.right, previewMenu.top,
+                        screen.width - previewMenu.right, previewMenu.height, 15);
+                });
+            }
             for (let i = 0; i < initialSelection; i++) {
                 miniMenu.moveSelection(previewMenu, miniMenu.MoveDirection.Right);
                 miniMenu.moveSelection(nameMenu, miniMenu.MoveDirection.Right);
@@ -102,6 +151,11 @@ namespace racing {
             miniMenu.setButtonEventsEnabled(previewMenu, true);
             while (!chosen) pause(20);
         } finally {
+            if (disposeTimerLayout) disposeTimerLayout();
+            if (timerClip) timerClip.destroy();
+            for (const timer of bestLapTimers) {
+                if (timer) timer.destroy();
+            }
             if (previewMenu) miniMenu.close(previewMenu);
             if (nameMenu) miniMenu.close(nameMenu);
             for (const text of textSprites) text.destroy();
