@@ -14,9 +14,33 @@ racing.raceOnTrack(racing.Track.Monaco, 1)
 racing.raceOnTrack(racing.Track.Monaco, 2)
 ```
 
-The player drives with the normal racing controls and instruments. Any trained
-saved bots join the race without learning new examples. After the player finishes
-and closes the result, the program continues with the next block.
+The player drives with the normal racing controls and instruments. Completed-lap
+timers stack above the position indicator on the right. Any trained
+saved bots join the race without learning new examples. The starting countdown
+uses the outlined racing font with white letters and a color-12 outline,
+displaying `3`, `2`, `1`, then `GO`. After the player finishes
+the race, results remain visible until the heading and every timing row finish
+animating. The `Press A` prompt then alternates between white and color 12.
+Release the driving buttons, then
+press A to continue. Holding A
+through the finish or pressing it during the animation does not dismiss the
+results. After A is released, the race scene closes and the program continues
+with the next block.
+
+The centered `RESULTS` title uses the racing font; the remaining text uses
+Fancy Text's geometric sans fonts, with centered ordinal placements such as
+`1st Place!` (with an exclamation point only for first place) and shared
+columns for lap labels, times, and new-best markers. Time digits occupy equal
+measured-width cells, keeping minutes, seconds, hundredths, colons, and decimal
+points aligned between every lap and the total, even when their minute counts
+have different lengths.
+Each text row has its own rounded black background without a border. There is
+no shared panel, leaving the ongoing race visible around and between the rows.
+
+Race positions prioritize completed laps and checkpoints, then progress from
+the last completed checkpoint toward the next. Cars waiting behind the starting
+line do not count as nearly a lap ahead, and crossing checkpoints does not reset
+their progress when the nearest road segment changes.
 
 The speedometer's lower segmented bar shows actual acceleration: green cells
 fill from the left for positive acceleration, and red cells fill from the right

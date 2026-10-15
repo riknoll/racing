@@ -8,7 +8,7 @@ namespace racing {
     export const SHARP_TURN_MIN_DURATION_MILLIS = 300;
 
     export const TOP_SPEED_MIN = 70;
-    export const TOP_SPEED_MAX = 200;
+    export const TOP_SPEED_MAX = 215;
 
     export const ACCELERATION_MIN = 5;
     export const ACCELERATION_MAX = 100;

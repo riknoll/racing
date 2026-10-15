@@ -29,7 +29,7 @@ namespace racing.effects {
     }
 
     export class DustFactory extends particles.ParticleFactory {
-        private colors = [14, 13, 1, 11];
+        private colors = [13, 1, 11];
 
         public offroad = false;
 
@@ -38,23 +38,21 @@ namespace racing.effects {
         }
 
         createParticle(anchor: particles.ParticleAnchor) {
-            if (!this.offroad)
-                return null;
-
-            const p = super.createParticle(anchor);
             const vx = anchor.vx || 0;
             const vy = anchor.vy || 0;
             const speed = Math.sqrt(vx * vx + vy * vy);
+            if (!this.offroad || speed < 1)
+                return null;
+
+            const p = super.createParticle(anchor);
             const kick = randint(2, 8);
             const xRange = Math.max(1, (anchor.width || 8) >> 2);
             const yRange = Math.max(1, (anchor.height || 8) >> 2);
 
             p._x = Fx.add(p._x, Fx8(randint(-xRange, xRange)));
             p._y = Fx.add(p._y, Fx8(randint(-yRange, yRange)));
-            p.vx = Fx8(vx * 0.1 - (speed > 0 ? vx / speed * kick : 0)
-                + randint(-8, 8));
-            p.vy = Fx8(vy * 0.1 - (speed > 0 ? vy / speed * kick : 0)
-                + randint(-8, 8));
+            p.vx = Fx8(vx * 0.1 - vx / speed * kick + randint(-8, 8));
+            p.vy = Fx8(vy * 0.1 - vy / speed * kick + randint(-8, 8));
             p.lifespan = randint(350, 700);
             p.data = randint(1, 4);
             p.color = this.colors[randint(0, this.colors.length - 1)];

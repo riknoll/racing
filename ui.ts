@@ -610,6 +610,8 @@ namespace racing {
         screen.drawTransparentImage(compactDigits[total], x + 21, y + 1);
     }
 
+    export const RACE_PLACE_MARKER_TOP = 95;
+
     export function drawPlacemarker(x: number, y: number, place: number) {
         screen.drawTransparentImage(placeMarkers[place - 1], x, y);
     }
@@ -620,7 +622,7 @@ namespace racing {
         timer.setRunning(false);
         timer.setElapsedTime(time);
         timer.right = screen.width + 8;
-        timer.top = screen.height - (totalLaps - lap) * 10 - 6;
+        timer.top = RACE_PLACE_MARKER_TOP - (totalLaps - lap) * 10 - 6;
         return timer;
     }
 
@@ -634,36 +636,114 @@ namespace racing {
             + "." + (fraction < 10 ? "0" : "") + fraction;
     }
 
-    export function showRaceResults(result: RaceResult) {
-        const started = game.runtime();
+    export function drawRoundedBackground(target: Image, left: number, top: number, width: number, height: number, color = 15): void {
+        target.fillRect(left + 2, top, width - 4, height, color);
+        target.fillRect(left + 1, top + 1, width - 2, height - 2, color);
+        target.fillRect(left, top + 2, width, height - 4, color);
+    }
+
+    export function showRaceResults(result: RaceResult): void {
+        const font = fancyText.geometric_sans_7;
+        const textImage = (text: string, textFont: fancyText.BaseFont, color: number) => {
+            const picture = image.create(fancyText.getTextWidth(textFont, text), textFont.lineHeight);
+            fancyText.draw(text, picture, 0, 0, 0, color, textFont);
+            return picture;
+        };
+        const title = textImage("RESULTS", customFont.racing, 1);
+        const lastTwoDigits = result.place % 100;
+        const lastDigit = result.place % 10;
+        const suffix = lastTwoDigits >= 11 && lastTwoDigits <= 13 ? "th"
+            : lastDigit === 1 ? "st" : lastDigit === 2 ? "nd" : lastDigit === 3 ? "rd" : "th";
+        const placement = textImage(result.place + suffix + " Place" + (result.place === 1 ? "!" : ""), font, 5);
+        const newBest = textImage("NEW!", font, 5);
+        const help = textImage("Press A", fancyText.geometric_sans_6, 1);
+        const dimHelp = help.clone();
+        dimHelp.replace(1, 12);
+        const labels = result.laps.map((lap, index) => textImage("LAP " + (index + 1), font, 1));
+        labels.push(textImage("TOTAL", font, 1));
+        const timeStrings = result.laps.map(lap => formatRaceTime(lap.time));
+        timeStrings.push(formatRaceTime(result.totalTime));
+        let minuteDigits = 2;
+        let digitWidth = 0;
+        let labelWidth = 0;
+        for (const time of timeStrings) minuteDigits = Math.max(minuteDigits, time.indexOf(":"));
+        for (let digit = 0; digit <= 9; digit++) {
+            digitWidth = Math.max(digitWidth, fancyText.getTextWidth(font, digit.toString()));
+        }
+        for (const label of labels) labelWidth = Math.max(labelWidth, label.width);
+        const colonWidth = fancyText.getTextWidth(font, ":");
+        const periodWidth = fancyText.getTextWidth(font, ".");
+        const timeWidth = (minuteDigits + 4) * digitWidth + colonWidth + periodWidth;
+        const times = timeStrings.map(time => {
+            const picture = image.create(timeWidth, font.lineHeight);
+            let left = (minuteDigits - time.indexOf(":")) * digitWidth;
+            for (let i = 0; i < time.length; i++) {
+                const character = time.charAt(i);
+                const cellWidth = character === ":" ? colonWidth : character === "." ? periodWidth : digitWidth;
+                const characterWidth = fancyText.getTextWidth(font, character);
+                fancyText.draw(character, picture, left + Math.idiv(cellWidth - characterWidth, 2), 0, 0, 1, font);
+                left += cellWidth;
+            }
+            return picture;
+        });
+        const panelDuration = 350;
+        const rowDelay = 160;
+        const rowDuration = 250;
+        const animationDuration = panelDuration + result.laps.length * rowDelay + rowDuration;
         const width = 144;
+        const columnGap = Math.idiv(width - 16 - labelWidth - timeWidth - newBest.width, 2);
+        const timeLeft = 8 + labelWidth + columnGap;
+        const newBestLeft = width - 8 - newBest.width;
         const height = 64 + result.laps.length * 14;
         const top = Math.idiv(screen.height - height, 2);
-        return scene.createRenderable(110, (target, camera) => {
+        const started = game.runtime();
+        let animationComplete = false;
+        const renderable = scene.createRenderable(110, (target, camera) => {
             const elapsed = game.runtime() - started;
-            const panelProgress = Math.min(1, elapsed / 350);
+            const panelProgress = Math.min(1, elapsed / panelDuration);
             const left = Math.round((screen.width - width) / 2
                 - width * Math.pow(1 - panelProgress, 3));
-            target.fillRect(left, top, width, height, 15);
-            target.drawRect(left, top, width, height, 1);
-            target.print("RACE RESULTS", left + 36, top + 8, 1, image.font8);
-            target.print("PLACE " + result.place, left + 30, top + 22, 5, image.font8);
+            const titleLeft = left + Math.idiv(width - title.width, 2);
+            const placementLeft = left + Math.idiv(width - placement.width, 2);
+            drawRoundedBackground(target, titleLeft - 4, top + 1, title.width + 7, title.height + 4);
+            target.drawTransparentImage(title, titleLeft, top + 3);
+            drawRoundedBackground(target, placementLeft - 4, top + 22, placement.width + 8, placement.height + 1);
+            target.drawTransparentImage(placement, placementLeft, top + 23);
 
             for (let i = 0; i <= result.laps.length; i++) {
-                const rowProgress = Math.max(0, Math.min(1, (elapsed - 350 - i * 160) / 250));
+                const rowProgress = Math.max(0, Math.min(1, (elapsed - panelDuration - i * rowDelay) / rowDuration));
                 if (rowProgress === 0) continue;
                 const rowLeft = left + Math.round(screen.width * Math.pow(1 - rowProgress, 3));
                 const isTotal = i === result.laps.length;
-                const rowTop = top + (isTotal ? 42 : 39) + i * 14;
-                const time = isTotal ? result.totalTime : result.laps[i].time;
-                const newBest = isTotal ? result.newBestTotal : result.laps[i].newBest;
-                target.print(isTotal ? "TOTAL" : "LAP " + (i + 1), rowLeft + 8, rowTop, 1, image.font8);
-                target.print(formatRaceTime(time), rowLeft + 46, rowTop, 1, image.font8);
-                if (newBest) {
-                    target.print("NEW!", rowLeft + 106, rowTop, 5, image.font8);
+                const rowTop = top + (isTotal ? 39 : 36) + i * 14;
+                const isNewBest = isTotal ? result.newBestTotal : result.laps[i].newBest;
+                drawRoundedBackground(target, rowLeft, rowTop - 1, width, font.lineHeight + 1);
+                target.drawTransparentImage(labels[i], rowLeft + 8, rowTop);
+                target.drawTransparentImage(times[i], rowLeft + timeLeft, rowTop);
+                if (isNewBest) {
+                    target.drawTransparentImage(newBest, rowLeft + newBestLeft, rowTop);
                 }
             }
+            if (elapsed >= animationDuration) {
+                const prompt = Math.idiv(elapsed - animationDuration, 500) % 2 === 0 ? help : dimHelp;
+                const promptLeft = left + Math.idiv(width - help.width, 2);
+                const promptTop = top + height - help.height - 3;
+                drawRoundedBackground(target, promptLeft - 4, promptTop - 1, help.width + 8, help.height + 1);
+                target.drawTransparentImage(prompt, promptLeft, promptTop);
+                animationComplete = true;
+            }
         });
+        try {
+            pauseUntil(() => animationComplete);
+            const scripted = scriptedMenuChoice("RACE RESULTS", ["Continue"], false);
+            if (scripted === undefined) {
+                pauseUntilAllButtonsReleased();
+                pauseUntil(() => controller.A.isPressed());
+                pauseUntilAllButtonsReleased();
+            }
+        } finally {
+            renderable.destroy();
+        }
     }
 
     export let patterns = [

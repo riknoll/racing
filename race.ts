@@ -17,8 +17,8 @@ namespace racing {
     export function startRace(course: Course, totalLaps: number, numOpponents: number, speed: RaceSpeed = 2) {
         let speedStat: number;
         switch (speed) {
-            case RaceSpeed.Slow: speedStat = 0; break;
-            case RaceSpeed.Med: speedStat = 50; break;
+            case RaceSpeed.Slow: speedStat = 50; break;
+            case RaceSpeed.Med: speedStat = 75; break;
             case RaceSpeed.Fast: speedStat = 100; break;
             default: throw "Choose a valid race speed";
         }
@@ -92,6 +92,7 @@ namespace racing {
         const lapTimes: number[] = [];
         const lapTimeSprites: timerSprite.TimerSprite[] = [];
         let finished = false;
+        let result: RaceResult;
         let displayedAccelerationRatio = 0;
 
         const eventContext = game.currentScene().eventContext;
@@ -115,7 +116,7 @@ namespace racing {
             racing.drawLapIndicator(135, 0, Math.min(player.currentLap, totalLaps), totalLaps);
             racing.drawSpeedometer(19, 20, 99, player.speed, player.stats.topSpeed,
                 displayedAccelerationRatio);
-            racing.drawPlacemarker(135, 95, placement);
+            racing.drawPlacemarker(135, RACE_PLACE_MARKER_TOP, placement);
         });
 
         const accelerationHandler = eventContext.registerFrameHandler(scene.PRE_RENDER_UPDATE_PRIORITY + 1, () => {
@@ -142,7 +143,9 @@ namespace racing {
                 }
             }
 
-            places.sort((a, b) => b.distance - a.distance);
+            places.sort((a, b) => b.currentLap - a.currentLap
+                || b.currentGateIndex - a.currentGateIndex
+                || b.distance - a.distance);
 
             carEffects.update();
 
@@ -150,17 +153,16 @@ namespace racing {
                 lapTimes.push(timer.getElapsedTime());
 
                 if (player.currentLap === totalLaps) {
-                    finished = true;
                     const placement = places.indexOf(player) + 1;
                     timer.setRunning(false);
                     // Replace the placement stub when opponent cars are implemented.
-                    const result = recordRaceResult(course.trackId, lapTimes, placement);
+                    result = recordRaceResult(course.trackId, lapTimes, placement);
+                    finished = true;
                     player.startAutoDrive(gates);
                     timer.destroy();
                     for (const lapTimer of lapTimeSprites) lapTimer.destroy();
                     minimapRenderable.destroy();
                     hudRenderable.destroy();
-                    showRaceResults(result);
                 }
                 else {
                     timer.setElapsedTime(0);
@@ -177,37 +179,36 @@ namespace racing {
 
         pauseUntilAllButtonsReleased();
 
-        const countdownSprite = fancyText.create("3", 0, 12, fancyText.rounded_large);
+        const countdownSprite = fancyText.create("3", 0, fancyText.twoToneColor(1, 12), outlinedRacingFont);
         countdownSprite.setFlag(SpriteFlag.RelativeToCamera, true);
         countdownSprite.setFlag(SpriteFlag.Ghost, true);
 
-        control.runInBackground(() => {
-            for (let i = 3; i > 0; i--) {
-                countdownSprite.setText(i.toString());
+        try {
+            control.runInBackground(() => {
+                for (let i = 3; i > 0; i--) {
+                    countdownSprite.setText(i.toString());
+                    countdownSprite.x = screen.width / 2;
+                    countdownSprite.y = screen.height / 2;
+                    pause(1000);
+                }
+                countdownSprite.setText("GO");
                 countdownSprite.x = screen.width / 2;
                 countdownSprite.y = screen.height / 2;
-                pause(1000);
-            }
-            countdownSprite.setText("GO!");
-            countdownSprite.x = screen.width / 2;
-            countdownSprite.y = screen.height / 2;
-            timer.setRunning(true);
-            player.controlEnabled = true;
-            for (const opponent of opponents) {
-                if (!opponent.driver) {
-                    opponent.startAutoDrive(gates);
+                timer.setRunning(true);
+                player.controlEnabled = true;
+                for (const opponent of opponents) {
+                    if (!opponent.driver) {
+                        opponent.startAutoDrive(gates);
+                    }
+                    opponent.paused = false;
                 }
-                opponent.paused = false;
-            }
-            pause(1000);
-            countdownSprite.destroy();
-        });
+                pause(1000);
+                countdownSprite.destroy();
+            });
 
-
-        pauseUntil(() => finished);
-
-
-        return () => {
+            pauseUntil(() => finished);
+            showRaceResults(result);
+        } finally {
             timer.destroy();
             for (const lapTimer of lapTimeSprites) lapTimer.destroy();
             minimapRenderable.destroy();

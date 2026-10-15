@@ -2,11 +2,21 @@
 
 Open the **Race / Train AI / View AI** menu. Players choose their track and race
 options in the game. Trained bot slots are restored from settings.
+These main-menu options use an outlined copy of the racing font in uppercase
+alongside their icons: white letters and pink `AI` suffixes, all with a one-pixel
+color-12 outline. The View AI icon has an opaque color-12 background. Labels
+are rendered into the main-menu row images with a shared column for the `AI`
+suffixes in `TRAIN AI` and `VIEW AI`; navigation and selection still use mini-menu.
+The selected main-menu row has a rounded color-12 background with a rounded cyan border.
+The font copy uses Fancy Text's two-tone font format; titles and other menus keep the original
+racing font. Regenerate the copy after changing the source font with
+`node fonts/create-outlined-racing-font.js`; use `--check` to verify it is current.
 
 The main menu plays a three-car demonstration on a randomly chosen race course
 behind its controls. It uses the normal autodrive, scenery, off-road dust, and
 fading road/off-road tire tracks. The cars have different stats, cornering styles,
 and racing lines, with independent changes of pace and passing maneuvers.
+Dust appears only while cars move off-road and uses colors 13, 1, and 11.
 A small, capped catch-up boost keeps the field competitive; cars trade places
 through their actual movement, not position swaps. The camera smoothly follows
 the leader, and menu input does not control the cars.
@@ -18,10 +28,14 @@ Menus use **arcade-mini-menu**, with A to select and B to return where available
 Track selection uses left/right navigation through synchronized preview and
 name rows, showing one track at a time. Other menus use up/down navigation.
 Longer lists and selected labels scroll automatically.
+Menu lists use a two-pixel side margin, giving the main-menu labels enough room
+to fit without horizontal scrolling.
 Menu titles and control hints use **arcade-fancy-text** sprites,
 centered and fixed to the screen above menu items and the demonstration race.
 Titles use `customFont.racing` in white uppercase at its native size, one pixel
 below the top of the screen, on one line without wrapping or shrinking long labels.
+The main-menu title sits three pixels below the top, with a fitted rounded black
+background matching the results title instead of a full-width header strip.
 Menus have no screen border or subtitles; control hints use directional arrow
 icons followed by uppercase text in their compact font. All menus share a
 bottom-aligned help strip with one clear pixel above and below the icons and
@@ -43,6 +57,16 @@ put setup blocks above it rather than below it.
 Importing the extension does not start the game automatically. The repository's
 `main.ts` is a test-only launcher, not part of the imported extension.
 
+### Results preview
+
+Set `PREVIEW_RACE_RESULTS` to `true` in `main.ts` to launch directly into sample
+four-lap race results using the real results renderer. It is disabled by default.
+Press A after the animation finishes to replay it. Edit the sample
+`LapResult` entries, placement, or new-best flags in that branch to preview other
+results; the total time is calculated from the sample laps. No saved times or
+race statistics are changed. Set the flag to `false` to restore the normal game
+launcher and scripted menu options.
+
 ## Race options
 
 After selecting a race track, configure **LAPS**, **OPPONENTS**, and **SPEED**.
@@ -53,6 +77,10 @@ to distinguish them from the labels. Pressing A on an option selects the final
 **START** row; pressing A again starts the race. Double-tap A to accept the
 defaults without changing any values. B returns to track selection without
 starting.
+
+After finishing, race results stay visible until the heading and all timing rows
+finish animating. Release the driving buttons, then press A to continue; the menu
+returns after the button is released.
 
 Laps range from **1–4** (default 1), and opponents from **0–3** (default 3).
 Until the racing font has digits, both selectors display **A, B, C, D**:
@@ -86,7 +114,8 @@ const values = racing.chooseOptionsMenu("OPTIONS", [
 ```
 
 Scripted menu choices use `OPTION: VALUE` entries followed by `Start`, for
-example `["Race", "Monaco", "LAPS: B", "OPPONENTS: B", "SPEED: Med", "Start"]`.
+example `["Race", "Monaco", "LAPS: B", "OPPONENTS: B", "SPEED: Med", "Start", "Continue"]`.
+The results screen accepts `Continue` after its animation finishes.
 Options not mentioned keep their defaults; `Back` cancels and `manual` switches
 to interactive selection with any scripted changes retained.
 

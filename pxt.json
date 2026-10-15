@@ -25,6 +25,7 @@
         "ai/visualization.ts",
         "ai/watch.ts",
         "ai/activity.ts",
+        "fonts/racing-outlined.g.ts",
         "menu.ts",
         "menu-debug.ts",
         "startup.ts",

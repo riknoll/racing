@@ -126,11 +126,11 @@ namespace aiRacing {
         }
 
         calculateDistance(car: racing.Car): number {
-            // Calculate the distance along the track for the given car, used
-            // for determining progress and placement.
-            const position = this.nearestRoadPosition(car);
-
-            return car.currentLap * this.centers.length + position.segment + position.fraction;
+            const start = racing.gateCenter(this.gates[car.currentGateIndex]);
+            const end = racing.gateCenter(this.gates[(car.currentGateIndex + 1) % this.gates.length]);
+            // Position may refine checkpoint progress, but cannot skip or undo it.
+            const fraction = Math.max(0, Math.min(1, racing.getSegmentProgress(car, start, end)));
+            return (car.currentLap + (car.currentGateIndex + fraction) / this.gates.length) * this.centers.length;
         }
 
         private nearestRoadPosition(car: racing.Car): RoadPosition {

@@ -250,8 +250,10 @@ namespace racing {
                 styleOptionsMenu(selector, cellWidth, cellHeight, true);
                 selector.z = 101;
                 const initial = selected[i];
+                // MakeCode captures mutable loop indices by reference.
+                const optionIndex = i;
                 selector.onSelectionChanged((value, index) => {
-                    selected[i] = index;
+                    selected[optionIndex] = index;
                 });
                 for (let step = 0; step < initial; step++) selector.moveSelection(miniMenu.MoveDirection.Right);
                 selector.xScroll = selector.targetXScroll = initial * cellWidth;
@@ -325,7 +327,7 @@ namespace racing {
         miniMenu.setStyleProperty(menu, miniMenu.StyleKind.DefaultAndSelected, miniMenu.StyleProperty.Padding, 0);
         miniMenu.setStyleProperty(menu, miniMenu.StyleKind.DefaultAndSelected, miniMenu.StyleProperty.Margin, 0);
         miniMenu.setStyleProperty(menu, miniMenu.StyleKind.DefaultAndSelected, miniMenu.StyleProperty.Border, 0);
-        miniMenu.setStyleProperty(menu, miniMenu.StyleKind.DefaultAndSelected, miniMenu.StyleProperty.Foreground, horizontal ? 3 : 1);
+        miniMenu.setStyleProperty(menu, miniMenu.StyleKind.DefaultAndSelected, miniMenu.StyleProperty.Foreground, horizontal ? 5 : 1);
         miniMenu.setStyleFont(menu, miniMenu.StyleKind.DefaultAndSelected, customFont.racing);
         miniMenu.setStyleProperty(menu, miniMenu.StyleKind.DefaultAndSelected, miniMenu.StyleProperty.IconOnly, horizontal ? 1 : 0);
         miniMenu.setStyleProperty(menu, miniMenu.StyleKind.DefaultAndSelected,
@@ -342,7 +344,7 @@ namespace racing {
         if (initialSelection < 0 || initialSelection >= choices.length || initialSelection !== Math.floor(initialSelection)) {
             throw "Invalid initial racing menu selection";
         }
-        let menu: Sprite;
+        let menu: miniMenu.MenuSprite;
         let overlay: scene.Renderable;
         let disposeBackground: () => void;
         const textSprites: fancyText.TextSprite[] = [];
@@ -352,28 +354,45 @@ namespace racing {
         try {
             if (setupBackground) disposeBackground = setupBackground();
             else scene.setBackgroundColor(15);
+            const titleSprite = createMenuText(title.toUpperCase(), setupBackground ? 3 : 1, customFont.racing, 1);
+            textSprites.push(titleSprite);
             const picture = image.create(160, 120);
             if (setupBackground) {
-                picture.fillRect(5, 0, 150, 20, 15);
+                drawRoundedBackground(picture, titleSprite.left - 4, titleSprite.top - 2,
+                    titleSprite.width + 7, titleSprite.height + 4);
             } else {
                 picture.fill(15);
             }
             if (setupBackground) {
                 overlay = scene.createRenderable(100, (target, camera) => {
                     target.drawTransparentImage(picture, 0, 0);
+                    if (menu) {
+                        let rowTop = menu.top - (menu.yScroll | 0);
+                        for (let i = 0; i < menu.selectedIndex; i++) {
+                            rowTop += menu.items[i].getHeight(menu.defaultStyle);
+                        }
+                        const rowHeight = menu.items[menu.selectedIndex].getHeight(menu.selectedStyle);
+                        const backgroundHeight = rowHeight
+                            - miniMenu.unpackMargin(menu.selectedStyle.margin, miniMenu.MoveDirection.Down);
+                        drawRoundedBackground(target, menu.left, rowTop, menu.width, backgroundHeight, 9);
+                        drawRoundedBackground(target, menu.left + 1, rowTop + 1, menu.width - 2, backgroundHeight - 2, 12);
+                    }
                 });
             } else {
                 scene.setBackgroundImage(picture);
             }
-            textSprites.push(createMenuText(title.toUpperCase(), 1, customFont.racing, 1));
             textSprites.push(createMenuHelp(picture, false, allowBack));
 
-            menu = miniMenu.createMenuFromArray(choices.map((choice, index) =>
-                miniMenu.createMenuItem(choice, icons ? icons[index] : undefined)));
+            menu = new miniMenu.MenuSprite();
+            menu.setMenuItems(setupBackground ? createMainMenuItems(choices, icons)
+                : choices.map((choice, index) => miniMenu.createMenuItem(choice, icons ? icons[index] : undefined)));
             miniMenu.setButtonEventsEnabled(menu, false);
             menu.setFlag(SpriteFlag.Ghost, true);
             menu.setFlag(SpriteFlag.RelativeToCamera, true);
-            if (setupBackground) menu.z = 101;
+            if (setupBackground) {
+                menu.z = 101;
+                miniMenu.setStyleProperty(menu, miniMenu.StyleKind.DefaultAndSelected, miniMenu.StyleProperty.IconOnly, 1);
+            }
             miniMenu.setMenuStyleProperty(menu, miniMenu.MenuStyleProperty.Columns, 1);
             miniMenu.setMenuStyleProperty(menu, miniMenu.MenuStyleProperty.Rows, 0);
             miniMenu.setMenuStyleProperty(menu, miniMenu.MenuStyleProperty.BackgroundColor, setupBackground ? 0 : 15);
@@ -381,7 +400,7 @@ namespace racing {
             miniMenu.setStyleProperty(menu, miniMenu.StyleKind.DefaultAndSelected,
                 miniMenu.StyleProperty.Foreground, 1);
             miniMenu.setStyleProperty(menu, miniMenu.StyleKind.DefaultAndSelected,
-                miniMenu.StyleProperty.Padding, miniMenu.createBorderBox(18, 1, 8, 1));
+                miniMenu.StyleProperty.Padding, miniMenu.createBorderBox(setupBackground ? 8 : 18, 1, setupBackground ? 1 : 8, 1));
             miniMenu.setStyleProperty(menu, miniMenu.StyleKind.DefaultAndSelected,
                 miniMenu.StyleProperty.Margin, miniMenu.createBorderBox(0, 0, 0, 1));
             miniMenu.setStyleProperty(menu, miniMenu.StyleKind.DefaultAndSelected,
@@ -390,10 +409,10 @@ namespace racing {
                 miniMenu.StyleProperty.IconTextSpacing, 6);
             miniMenu.setStyleProperty(menu, miniMenu.StyleKind.Default, miniMenu.StyleProperty.Background, setupBackground ? 0 : 15);
             miniMenu.setStyleProperty(menu, miniMenu.StyleKind.Default, miniMenu.StyleProperty.BorderColor, setupBackground ? 0 : 15);
-            miniMenu.setStyleProperty(menu, miniMenu.StyleKind.Selected, miniMenu.StyleProperty.Background, 12);
-            miniMenu.setStyleProperty(menu, miniMenu.StyleKind.Selected, miniMenu.StyleProperty.BorderColor, 9);
-            miniMenu.setDimensions(menu, 144, icons ? 66 : 78);
-            menu.left = 8;
+            miniMenu.setStyleProperty(menu, miniMenu.StyleKind.Selected, miniMenu.StyleProperty.Background, setupBackground ? 0 : 12);
+            miniMenu.setStyleProperty(menu, miniMenu.StyleKind.Selected, miniMenu.StyleProperty.BorderColor, setupBackground ? 0 : 9);
+            miniMenu.setDimensions(menu, screen.width - 4, icons ? 66 : 78);
+            menu.left = (screen.width - menu.width) / 2;
             menu.top = icons ? 42 : 31;
             for (let i = 0; i < initialSelection; i++) {
                 miniMenu.moveSelection(menu, miniMenu.MoveDirection.Down);
@@ -420,6 +439,41 @@ namespace racing {
             game.popScene();
         }
         return selected;
+    }
+
+    function createMainMenuItems(choices: string[], icons?: Image[]): miniMenu.MenuItem[] {
+        const font = outlinedRacingFont;
+        const labels = choices.map(choice => choice.toUpperCase());
+        let prefixWidth = 0;
+        let iconWidth = 0;
+        for (let i = 0; i < labels.length; i++) {
+            const aiIndex = labels[i].indexOf(" AI");
+            if (aiIndex >= 0) {
+                prefixWidth = Math.max(prefixWidth, fancyText.getTextWidth(font, labels[i].substr(0, aiIndex)));
+            }
+            if (icons && icons[i]) iconWidth = Math.max(iconWidth, icons[i].width);
+        }
+        const aiLeft = prefixWidth + font.wordSpacing;
+        const textLeft = iconWidth ? iconWidth + 6 : 0;
+        const color = fancyText.twoToneColor(1, 12);
+        const aiColor = fancyText.twoToneColor(3, 12);
+        return labels.map((label, index) => {
+            const icon = icons ? icons[index] : undefined;
+            const aiIndex = label.indexOf(" AI");
+            const textWidth = aiIndex < 0 ? fancyText.getTextWidth(font, label)
+                : aiLeft + fancyText.getTextWidth(font, "AI");
+            const height = Math.max(font.lineHeight, icon ? icon.height : 0);
+            const picture = image.create(textLeft + textWidth, height);
+            if (icon) {
+                picture.drawTransparentImage(icon, Math.idiv(iconWidth - icon.width, 2),
+                    Math.idiv(height - icon.height, 2));
+            }
+            const textTop = Math.idiv(height - font.lineHeight, 2);
+            fancyText.draw(aiIndex < 0 ? label : label.substr(0, aiIndex),
+                picture, textLeft, textTop, 0, color, font);
+            if (aiIndex >= 0) fancyText.draw("AI", picture, textLeft + aiLeft, textTop, 0, aiColor, font);
+            return miniMenu.createMenuItem(label, picture);
+        });
     }
 
     class TrackMenuItem extends miniMenu.MenuItem {
@@ -500,6 +554,7 @@ namespace racing {
 
     export function memoryMenuIcon(): Image {
         const icon = image.create(17, 17);
+        icon.fill(12);
         icon.drawRect(1, 1, 15, 15, 9);
         icon.fillRect(4, 10, 2, 2, 9);
         icon.fillRect(8, 7, 2, 2, 1);
