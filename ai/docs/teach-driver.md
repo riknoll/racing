@@ -8,7 +8,10 @@ The AI learns from your current road
 position and the controls you use, not from a replay of the lap.
 
 Training keeps the same driving presentation as racing: track minimap,
-speedometer, finish line, timer, lap indicator, and completed-lap times. The
+speedometer, finish line, timer, lap indicator, and completed-lap times. It also
+uses the normal race's moving off-road dust, off-road tire tracks, and braking
+or sharp-turn tire tracks. Added AI test racers get the same effects, and all
+particle sources are cleaned up when a lesson restarts or the activity closes. The
 camera looks ahead along the car's heading rather than hiding the track under
 a separate AI HUD.
 
@@ -23,7 +26,11 @@ aiRacing.teachDriver()
 - **Left / Right:** steer. You can steer while accelerating or braking.
 - **Down:** reverse. While moving forward this brakes first, then reverses.
 
-Read the introduction, then press A to start. The teaching block ends after one
+The introduction uses geometric text and aligned control-icon and description
+columns, with replaceable 8-by-8 control images in `ai/activity.ts`.
+Compact control rows leave room for three lines of driving guidance below.
+Press A to close the help, then A again at the start-teaching prompt to
+begin recording. The teaching block ends after one
 lap; menu training ends after the selected number of circuits. Driving continues
 between laps without resetting the car or reviewing individual segments.
 Forward checkpoint tracking can catch up after missed gates so a corner does not

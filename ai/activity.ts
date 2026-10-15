@@ -1,11 +1,32 @@
 namespace aiRacing {
     export const MIN_EXAMPLES = 40;
     export const MIN_ATTEMPT_TIME_MS = 180000;
+    const trainingAButtonIcon = img`
+        . . 6 6 6 6 . .
+        . 6 6 1 1 6 6 .
+        6 6 1 6 6 1 6 6
+        6 6 1 6 6 1 6 6
+        6 6 1 1 1 1 6 6
+        8 6 1 6 6 1 6 8
+        . 8 6 6 6 6 8 .
+        . . 8 8 8 8 . .
+    `;
+    const trainingBButtonIcon = img`
+        . . 6 6 6 6 . .
+        . 6 1 1 1 6 6 .
+        6 6 1 6 6 1 6 6
+        6 6 1 1 1 6 6 6
+        6 6 1 6 6 1 6 6
+        8 6 1 1 1 1 6 8
+        . 8 6 6 6 6 8 .
+        . . 8 8 8 8 . .
+    `;
     let track: Track;
     let driver: Driver;
     let player: LearningCar;
     let watchedCar: LearningCar;
     let cars: LearningCar[] = [];
+    let carEffects: racing.effects.CarEffects[] = [];
     let teachingMillis = 0;
     let teachingOffRoadMillis = 0;
     let status = "";
@@ -35,18 +56,16 @@ namespace aiRacing {
         trainingLaps = laps;
         initialize(course);
         if (drivingDisplay) drivingDisplay.destroy();
-        for (const car of cars) car.destroy();
-        cars = [];
+        disposeCars();
         driver = new Driver();
         player = new LearningCar(new racing.RacerStats(100, 100, 100, 100, 100, 100), racing.getPlayerCarFrames(), track);
         cars.push(player);
+        carEffects.push(new racing.effects.CarEffects(player));
         player.paused = true;
         watchedCar = player;
         drivingDisplay = new racing.DrivingDisplay(track.gates, player, laps);
         status = "READY";
-        showMessage("Teach the AI by driving " + laps + (laps === 1 ? " lap." : " laps.")
-            + "\nA or Up: accelerate\nB: brake\nLeft/Right: steer\nDown: reverse"
-            + "\nDrive continuously until the laps are complete. If you go off-road, show it how to recover. It learns your mistakes too.");
+        showTrainingHelp(laps);
         releaseButtons();
         if (!racing.skipTestPrompts()) {
             while (!controller.A.isPressed()) pause(20);
@@ -135,6 +154,7 @@ namespace aiRacing {
         const racer = new LearningCar(player.stats, racing.getCarFrames(colorIndex), track);
         racer.driver = driver;
         cars.push(racer);
+        carEffects.push(new racing.effects.CarEffects(racer));
         return racer;
     }
 
@@ -146,6 +166,7 @@ namespace aiRacing {
         scroller.scrollBackgroundWithCamera(scroller.CameraScrollMode.BothDirections);
         track = course.createTrack();
         game.onUpdate(() => {
+            for (const effects of carEffects) effects.update();
             if (!watchedCar) return;
             if (drivingDisplay) {
                 drivingDisplay.update(watchedCar.elapsedMillis, watchedCar.currentLap, watchedCar.paused && status !== "READY");
@@ -153,11 +174,107 @@ namespace aiRacing {
             scene.centerCameraAt(watchedCar.x + 30 * Math.cos(watchedCar.heading),
                 watchedCar.y + 30 * Math.sin(watchedCar.heading));
         });
+        const startFont = fancyText.geometric_sans_6;
+        const startPrompt = image.create(12 + fancyText.getTextWidth(startFont, "Start teaching"), 11);
+        startPrompt.drawTransparentImage(trainingAButtonIcon, 0, 1);
+        fancyText.draw("Start teaching", startPrompt, 12, 1, 0, 1, startFont);
         scene.createRenderable(100, (target, camera) => {
             if (!watchedCar || showingMessage || status !== "READY") return;
-            target.fillRect(16, 43, 128, 18, 15);
-            target.print("A: start teaching", 29, 48, 1, image.font8);
+            const left = Math.idiv(target.width - startPrompt.width, 2);
+            racing.drawRoundedBackground(target, left - 4, 43, startPrompt.width + 8, 15);
+            target.drawTransparentImage(startPrompt, left, 45);
         });
+    }
+
+    function createTrainingHelp(laps: number): Image {
+        const picture = image.create(screen.width, screen.height);
+        picture.fill(12);
+        racing.drawRoundedBackground(picture, 3, 2, picture.width - 6, 116, 9);
+        racing.drawRoundedBackground(picture, 4, 3, picture.width - 8, 114);
+        const font = fancyText.geometric_sans_6;
+        const centeredText = (text: string, top: number, textFont: fancyText.BaseFont, color: number) => {
+            fancyText.draw(text, picture, Math.idiv(picture.width - fancyText.getTextWidth(textFont, text), 2),
+                top, 0, color, textFont);
+        };
+        centeredText("TEACH THE AI", 5, fancyText.geometric_sans_7, 5);
+        centeredText("Drive " + laps + (laps === 1 ? " lap" : " laps") + " to teach it.", 17, font, 1);
+
+        const up = img`
+            . . . 1 1 . . .
+            . . 1 1 1 1 . .
+            . 1 1 1 1 1 1 .
+            1 1 1 1 1 1 1 1
+            1 1 1 1 1 1 1 1
+            . . 1 1 1 1 . .
+            . . 1 1 1 1 . .
+            . . 1 1 1 1 . .
+        `;
+        const down = up.clone();
+        down.flipY();
+        const left = img`
+            . . . 1 1 . . .
+            . . 1 1 1 . . .
+            . 1 1 1 1 1 1 1
+            1 1 1 1 1 1 1 1
+            1 1 1 1 1 1 1 1
+            . 1 1 1 1 1 1 1
+            . . 1 1 1 . . .
+            . . . 1 1 . . .
+        `;
+        const right = left.clone();
+        right.flipX();
+        const accelerate = image.create(20, 8);
+        accelerate.drawTransparentImage(trainingAButtonIcon, 0, 0);
+        accelerate.drawTransparentImage(up, 12, 0);
+        const steer = image.create(20, 8);
+        steer.drawTransparentImage(left, 0, 0);
+        steer.drawTransparentImage(right, 12, 0);
+        const controls = [accelerate, trainingBButtonIcon, steer, down];
+        const descriptions = ["Accelerate", "Brake", "Steer", "Reverse"];
+        const columnLeft = Math.idiv(picture.width - 136, 2);
+        const rowHeight = 10;
+        picture.fillRect(columnLeft + 35, 29, 1, controls.length * rowHeight, 12);
+        for (let i = 0; i < controls.length; i++) {
+            const top = 29 + i * rowHeight;
+            const icon = controls[i];
+            picture.drawTransparentImage(icon, columnLeft + 16 - Math.idiv(icon.width, 2),
+                top + Math.idiv(rowHeight - icon.height, 2));
+            fancyText.draw(descriptions[i], picture, columnLeft + 44,
+                top + Math.idiv(rowHeight - font.lineHeight, 2), 0, 1, font);
+        }
+
+        centeredText("Keep driving until the end.", 74, font, 1);
+        centeredText("Show off-road recovery.", 83, font, 1);
+        centeredText("It learns your mistakes, too.", 92, font, 1);
+        const continueLeft = Math.idiv(picture.width - 12 - fancyText.getTextWidth(font, "Continue"), 2);
+        picture.drawTransparentImage(trainingAButtonIcon, continueLeft, 106);
+        fancyText.draw("Continue", picture, continueLeft + 12, 106, 0, 1, font);
+        return picture;
+    }
+
+    function showTrainingHelp(laps: number): void {
+        if (racing.skipTestPrompts()) {
+            console.log("Teach the AI by driving " + laps + (laps === 1 ? " lap." : " laps."));
+            return;
+        }
+        const picture = createTrainingHelp(laps);
+        showingMessage = true;
+        if (drivingDisplay) drivingDisplay.setVisible(false);
+        game.pushScene();
+        let renderable: scene.Renderable;
+        try {
+            renderable = scene.createRenderable(110, (target, camera) => {
+                target.drawImage(picture, 0, 0);
+            });
+            racing.pauseUntilAllButtonsReleased();
+            pauseUntil(() => controller.A.isPressed());
+            racing.pauseUntilAllButtonsReleased();
+        } finally {
+            if (renderable) renderable.destroy();
+            game.popScene();
+            showingMessage = false;
+            if (drivingDisplay) drivingDisplay.setVisible(true);
+        }
     }
 
     function showMessage(text: string): void {
@@ -184,12 +301,18 @@ namespace aiRacing {
         return elapsed ? Math.round(100 * (1 - offRoad / elapsed)) : 100;
     }
 
+    function disposeCars(): void {
+        for (const effects of carEffects) effects.destroy();
+        carEffects = [];
+        for (const car of cars) car.destroy();
+        cars = [];
+    }
+
     /** Release scene objects, keeping the model available to the starting menu. */
     export function disposeActivity(): void {
         if (drivingDisplay) drivingDisplay.destroy();
         drivingDisplay = undefined;
-        for (const car of cars) car.destroy();
-        cars = [];
+        disposeCars();
         track = undefined;
         player = undefined;
         watchedCar = undefined;
