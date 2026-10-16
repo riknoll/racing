@@ -204,6 +204,7 @@ namespace racing {
 
                 this.say("Sharp turns need less speed.\nRelease A or Up to slow down.", [TutorialButton.A, TutorialButton.Up]);
                 this.say("You can also press B to brake!", [TutorialButton.B]);
+                this.say("The track will have red and\nwhite curbs when a\nsharp turn is coming!", []);
                 this.say("Try taking the tight turns!\nSlow down when needed.", [TutorialButton.B]);
                 this.practice(TUTORIAL_DRIVING_CONTROLS);
                 pauseUntil(() => this.car.x >= this.track.finishX);
@@ -291,7 +292,7 @@ namespace racing {
             this.caption.setFlag(SpriteFlag.Invisible, false);
             this.caption.animateAtSpeed(35);
             this.caption.pauseUntilAnimationIsComplete();
-            pause(900);
+            pause(2000);
         }
 
         private practice(allowedControls: number): void {

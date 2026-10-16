@@ -8,8 +8,9 @@ color-12 outline. The View AI icon has an opaque color-12 background. Labels
 are rendered into the main-menu row images with a shared column for the `AI`
 suffixes in `TRAIN AI` and `VIEW AI`; navigation and selection still use mini-menu.
 The selected main-menu row has a rounded color-12 background with a rounded cyan border.
-All four entries fit on screen. The longer **How to Drive** label uses the
-compact geometric font so it fits without horizontal scrolling.
+All four entries fit vertically in a full-screen-width menu. The longer
+**How to Drive** label uses the same outlined racing font at its natural size
+and scrolls horizontally while selected.
 The font copy uses Fancy Text's two-tone font format; titles and other menus keep the original
 racing font. Regenerate the copy after changing the source font with
 `node fonts/create-outlined-racing-font.js`; use `--check` to verify it is current.
@@ -71,7 +72,7 @@ The generator preserves every road pixel in that source, replacing edge tiles
 with outlined variants and adding neighboring outline-only tiles where needed.
 It does not redraw, resize, or smooth the road.
 Both sides of each tight-turn approach have directional warning signs. The
-preceding 11 tiles (176 pixels) of straightaway edging use yellow/black stripes;
+preceding 11 tiles (176 pixels) of straightaway edging use red/white stripes;
 road pixels and the rest of the outline remain unchanged.
 The outlined map and lesson checkpoints are baked by
 `node tracks/create-driving-tutorial.js`; use `--check` to check the generated

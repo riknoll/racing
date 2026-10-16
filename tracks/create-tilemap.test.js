@@ -273,7 +273,7 @@ test("compact outline is four pixels outside the road without changing road pixe
     }
     assert.ok(edge !== undefined)
     for (let delta = 1; delta <= 4; delta++) {
-        assert.equal(pixelAt(x, edge - delta), "c", `missing outline at depth ${delta}`)
+        assert.equal(pixelAt(x, edge - delta), "2", `missing outline at depth ${delta}`)
     }
     assert.equal(pixelAt(x, edge - 5), "0")
 })
@@ -908,7 +908,10 @@ test("batch resources share named tiles and preserve both maps and their gates",
     const resources = JSON.parse(jres)
     const names = resources.monaco.tileset
     assert.ok(names.length > 27 && names.length <= 256)
-    assert.deepEqual(resources.usa.tileset, names)
+    assert.deepEqual(resources.usa.tileset.slice(0, 27), names.slice(0, 27))
+    assert.ok(resources.usa.tileset.length <= 256)
+    assert.ok(resources.usa.tileset.some(name => name.includes("Striped") && names.includes(name)),
+        "per-map palettes should still share identical stripe images")
     assert.equal(new Set(names).size, names.length)
     assert.deepEqual(names.slice(0, 3),
         ["myTiles.transparency16", "myTiles.grass", "myTiles.road"])
@@ -935,7 +938,7 @@ test("batch resources share named tiles and preserve both maps and their gates",
         assert.equal(bytes.readUInt16LE(2), map.height)
         for (let tile = 0; tile < map.tiles.length; tile++) {
             const original = map.images[map.tiles[tile]].replaceAll("\n", "")
-            const imageName = names[bytes[4 + tile]].slice("myTiles.".length)
+            const imageName = resources[id].tileset[bytes[4 + tile]].slice("myTiles.".length)
             const image = Buffer.from(resources[imageName].data, "base64")
             for (let pixel = 0; pixel < 256; pixel++) {
                 const x = pixel % 16
@@ -981,10 +984,10 @@ test("batch resources share named tiles and preserve both maps and their gates",
     assert.throws(() => formatBatch([{ name: "road.svg", map: entries[0].map }]),
         /road\.svg: Track name conflicts with tile name/)
     assert.throws(() => formatBatch([
-        entries[0], { ...entries[1], map: { ...entries[1].map, roadColor: 1 } },
+        entries[0], { ...entries[1], map: { ...entries[1].map, roadColor: 3 } },
     ]), /usa\.svg: Batch tracks must use the same grass, road, and outline colors/)
     assert.throws(() => formatBatch([
-        entries[0], { ...entries[1], map: { ...entries[1].map, outlineColor: 2 } },
+        entries[0], { ...entries[1], map: { ...entries[1].map, outlineColor: 3 } },
     ]), /usa\.svg: Batch tracks must use the same grass, road, and outline colors/)
 })
 

@@ -411,7 +411,8 @@ namespace racing {
             miniMenu.setStyleProperty(menu, miniMenu.StyleKind.Default, miniMenu.StyleProperty.BorderColor, setupBackground ? 0 : 15);
             miniMenu.setStyleProperty(menu, miniMenu.StyleKind.Selected, miniMenu.StyleProperty.Background, setupBackground ? 0 : 12);
             miniMenu.setStyleProperty(menu, miniMenu.StyleKind.Selected, miniMenu.StyleProperty.BorderColor, setupBackground ? 0 : 9);
-            miniMenu.setDimensions(menu, screen.width - 4, setupBackground ? 88 : icons ? 66 : 78);
+            miniMenu.setDimensions(menu, setupBackground ? screen.width : screen.width - 4,
+                setupBackground ? 88 : icons ? 66 : 78);
             menu.left = (screen.width - menu.width) / 2;
             menu.top = setupBackground ? 24 : icons ? 42 : 31;
             for (let i = 0; i < initialSelection; i++) {
@@ -460,23 +461,62 @@ namespace racing {
         return labels.map((label, index) => {
             const icon = icons ? icons[index] : undefined;
             const aiIndex = label.indexOf(" AI");
-            let textWidth = aiIndex < 0 ? fancyText.getTextWidth(font, label)
+            const textWidth = aiIndex < 0 ? fancyText.getTextWidth(font, label)
                 : aiLeft + fancyText.getTextWidth(font, "AI");
-            const itemFont = aiIndex < 0 && textLeft + textWidth > screen.width - 16
-                ? fancyText.geometric_sans_9 : font;
-            if (itemFont !== font) textWidth = fancyText.getTextWidth(itemFont, label);
             const height = Math.max(font.lineHeight, icon ? icon.height : 0);
             const picture = image.create(textLeft + textWidth, height);
             if (icon) {
                 picture.drawTransparentImage(icon, Math.idiv(iconWidth - icon.width, 2),
                     Math.idiv(height - icon.height, 2));
             }
-            const textTop = Math.idiv(height - itemFont.lineHeight, 2);
+            const textTop = Math.idiv(height - font.lineHeight, 2);
             fancyText.draw(aiIndex < 0 ? label : label.substr(0, aiIndex),
-                picture, textLeft, textTop, 0, itemFont === font ? color : 1, itemFont);
+                picture, textLeft, textTop, 0, color, font);
             if (aiIndex >= 0) fancyText.draw("AI", picture, textLeft + aiLeft, textTop, 0, aiColor, font);
-            return miniMenu.createMenuItem(label, picture);
+            return new MainMenuItem(label, picture);
         });
+    }
+
+    class MainMenuItem extends miniMenu.MenuItem {
+        private viewport: Image;
+
+        constructor(label: string, picture: Image) {
+            super(label, picture);
+        }
+
+        drawTo(left: number, top: number, target: Image, style: miniMenu.Style,
+            width: number, height: number, cutTop: boolean, cutLeft: boolean,
+            scrollTick: number, maxWidth = 0, maxHeight = 0): void {
+            const itemWidth = maxWidth || this.getWidth(style);
+            let available = Math.min(width, itemWidth);
+            for (const inset of [style.margin, style.border, style.padding]) {
+                available -= miniMenu.unpackMargin(inset, miniMenu.MoveDirection.Left)
+                    + miniMenu.unpackMargin(inset, miniMenu.MoveDirection.Right);
+            }
+            if (available <= 0 || height <= 0) return;
+            const picture = this.icon;
+            if (picture.width <= available) {
+                super.drawTo(left, top, target, style, width, height, cutTop, cutLeft,
+                    scrollTick, itemWidth, maxHeight);
+                return;
+            }
+            if (!this.viewport || this.viewport.width !== available) {
+                this.viewport = image.create(available, picture.height);
+            }
+            const distance = picture.width - available;
+            const cycle = (200 + distance) * 4;
+            const offset = Math.min(Math.max(Math.floor((scrollTick % cycle - 100) / 4), 0), distance);
+            this.viewport.fill(0);
+            this.viewport.drawTransparentImage(picture, -offset, 0);
+            // Mini-menu scrolls text, but these rows contain pre-rendered two-tone artwork.
+            this.icon = this.viewport;
+            try {
+                super.drawTo(left, top, target, style, width, height, cutTop, cutLeft,
+                    scrollTick, itemWidth, maxHeight);
+            } finally {
+                this.icon = picture;
+            }
+        }
     }
 
     class TrackMenuItem extends miniMenu.MenuItem {

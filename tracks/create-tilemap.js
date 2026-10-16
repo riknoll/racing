@@ -2,12 +2,12 @@
 const fs = require("node:fs")
 const path = require("node:path")
 
-const usage = `Usage: node tracks/create-tilemap.js <track.svg> [--size 200] [--width 4] [--simplify 2] [--angles 32] [--tileset detailed|compact] [--grass-color 0] [--road-color 11] [--outline-color 12] [--output track.ts]
-       node tracks/create-tilemap.js --batch [--size 200] [--width 4] [--simplify 2] [--tileset compact] [--grass-color 0] [--road-color 11] [--outline-color 12] [--output directory]
+const usage = `Usage: node tracks/create-tilemap.js <track.svg> [--size 200] [--width 4] [--simplify 2] [--angles 32] [--tileset detailed|compact] [--grass-color 0] [--road-color 11] [--outline-color 2] [--output track.ts]
+       node tracks/create-tilemap.js --batch [--size 200] [--width 4] [--simplify 2] [--tileset compact] [--grass-color 0] [--road-color 11] [--outline-color 2] [--output directory]
 
 Writes a standalone MakeCode Arcade TypeScript tilemap (16-pixel tiles).
 --batch reads every SVG in tracks/ and writes tilemap.g.ts and tilemap.g.jres
-to the project root (or --output directory), using a shared tile palette.
+to the project root (or --output directory), sharing tile artwork with a palette per map.
 Batch mode defaults to the compact tileset and includes per-track road gates.
 --size is the longest track dimension in tiles; --width is road width in tiles;
 --simplify is the maximum centerline deviation in tiles (0 disables simplification).
@@ -17,6 +17,11 @@ Batch mode defaults to the compact tileset and includes per-track road gates.
 tiles' 1:2 pixel slope (about 26.6 degrees), and a fixed 26-image road palette:
 grass, full road, four diagonal corners, sixteen shallow edges, and four half tiles.
 Compact mode adds an approximately four-pixel outline without changing road pixels.
+Significant turns have red/white striped edging, starting nine tiles
+before the turn and continuing through its exit. Gradual bends keep the normal outline.
+Warnings include turns of at least 45 degrees and nearby bends totaling 67.5 degrees.
+Each outlined shape has solid and striped versions. Striped edges have a red
+first quarter, white middle half, and red final quarter; corner fillers are red.
 Angled outcroppings with no road bordering any flat edge are removed after tile selection.
 Short adjacent corners are combined when they stay within --simplify deviation.
 Road tiles must have matching sides, except a full road tile can meet a
@@ -28,7 +33,7 @@ The longest closed SVG path is used as the track centerline. Grass, road,
 and generated edge tiles draw straight road edges at 16 pixels per tile.
 --grass-color and --road-color accept distinct palette indices from 0 to 15.
 In compact mode, --outline-color must also differ from both colors. Grass defaults
-to transparent (0), road to 11, and the compact outline to 12. Detailed mode
+to transparent (0), road to 11, and the compact outline to red (2). Detailed mode
 ignores --outline-color and does not add an outline.
 The SVG must mark the finish with red and yellow paths. The output includes
 trackWaypoints: pairs of gate endpoints (start X/Y, end X/Y as Int32LE pixels).
@@ -46,7 +51,7 @@ function paletteColors(config) {
     }
     if (grassColor === roadColor) throw new Error("--grass-color and --road-color must differ")
     if (config.tileset !== "compact") return { grassColor, roadColor }
-    const outlineColor = config.outlineColor ?? 12
+    const outlineColor = config.outlineColor ?? 2
     if (!Number.isInteger(outlineColor) || outlineColor < 0 || outlineColor > 15) {
         throw new Error("--outline-color must be an integer from 0 to 15")
     }
@@ -58,7 +63,7 @@ function paletteColors(config) {
 
 function options(argv) {
     const result = { size: 200, width: 4, simplify: 2, angles: 32,
-        tileset: "detailed", grassColor: 0, roadColor: 11, outlineColor: 12 }
+        tileset: "detailed", grassColor: 0, roadColor: 11, outlineColor: 2 }
     let input
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i]
@@ -1331,9 +1336,12 @@ function gateHex(map) {
 }
 
 function colorizeTile(image, colors) {
-    return image.replaceAll(/[17f]/g, pixel =>
-        (pixel === "7" ? colors.grassColor :
-            pixel === "1" ? colors.roadColor : colors.outlineColor).toString(16))
+    return image.replaceAll(/[17fyk]/g, pixel => {
+        if (pixel === "y") return "2"
+        if (pixel === "k") return "1"
+        return (pixel === "7" ? colors.grassColor :
+            pixel === "1" ? colors.roadColor : colors.outlineColor).toString(16)
+    })
 }
 
 const outlineOffsets = []
@@ -1394,8 +1402,113 @@ function outlineMap(map) {
     return { ...map, images, tiles }
 }
 
+function stripeSharpTurns(map) {
+    const points = map.finish.forward ? map.points : map.points.slice().reverse()
+    const segments = []
+    let length = 0
+    for (let i = 0; i < points.length; i++) {
+        const a = points[i], b = points[(i + 1) % points.length]
+        const dx = b.x - a.x, dy = b.y - a.y
+        const size = Math.hypot(dx, dy)
+        segments.push({ a, dx, dy, size, start: length })
+        length += size
+    }
+    const angles = segments.map((segment, i) => {
+        const previous = segments[(i + segments.length - 1) % segments.length]
+        return Math.atan2(previous.dx * segment.dy - previous.dy * segment.dx,
+            previous.dx * segment.dx + previous.dy * segment.dy)
+    })
+    const warnings = []
+    for (let i = 0; i < angles.length; i++) {
+        let angle = angles[i]
+        let span = 0
+        let end = i
+        // A hairpin can be split into several smaller, closely spaced turns.
+        for (let j = 1; j < angles.length && Math.abs(angle) < Math.PI - 1e-8; j++) {
+            const next = (i + j) % angles.length
+            const distance = span + segments[end].size
+            if (distance > map.roadWidth * 4 || angles[next] * angles[i] <= 0) break
+            span = distance
+            angle += angles[next]
+            end = next
+        }
+        if (Math.abs(angles[i]) < Math.PI / 4 - 1e-8 && Math.abs(angle) < Math.PI * 3 / 8 - 1e-8) continue
+        const lead = 9 + map.roadWidth / 2
+        warnings.push({ start: segments[i].start - lead,
+            size: lead + span + map.roadWidth / 2 + 1 })
+    }
+    const images = [...map.images]
+    const tiles = Array.from(map.tiles)
+    const variants = new Map()
+    for (let tile = 0; tile < map.images.length; tile++) {
+        const image = map.images[tile]
+        if (!image.includes("f")) continue
+        variants.set(tile, images.length)
+        images.push(stripeTile(image))
+    }
+    for (let y = 0; y < map.height; y++) {
+        for (let x = 0; x < map.width; x++) {
+            const index = y * map.width + x
+            const tile = map.tiles[index]
+            if (!map.images[tile].includes("f")) continue
+            let nearest = Infinity
+            let position = 0
+            for (const segment of segments) {
+                const dx = x + 0.5 - segment.a.x, dy = y + 0.5 - segment.a.y
+                const t = Math.max(0, Math.min(1, (dx * segment.dx + dy * segment.dy) / segment.size ** 2))
+                const distance = (dx - t * segment.dx) ** 2 + (dy - t * segment.dy) ** 2
+                if (distance < nearest) {
+                    nearest = distance
+                    position = segment.start + t * segment.size
+                }
+            }
+            if (!warnings.some(warning => warning.size >= length ||
+                ((position - warning.start) % length + length) % length <= warning.size)) continue
+            tiles[index] = variants.get(tile)
+        }
+    }
+    return { ...map, images, tiles }
+}
+
+function stripeTile(image) {
+    const points = []
+    for (let y = 0; y < 16; y++) {
+        for (let x = 0; x < 16; x++) {
+            if (image[y * 17 + x] === "f") points.push({ x, y })
+        }
+    }
+    const cx = points.reduce((sum, point) => sum + point.x, 0) / points.length
+    const cy = points.reduce((sum, point) => sum + point.y, 0) / points.length
+    let xx = 0, yy = 0, xy = 0
+    for (const point of points) {
+        xx += (point.x - cx) ** 2
+        yy += (point.y - cy) ** 2
+        xy += (point.x - cx) * (point.y - cy)
+    }
+    const angle = Math.atan2(2 * xy, xx - yy) / 2
+    const dx = Math.cos(angle), dy = Math.sin(angle)
+    const positions = points.map(point => point.x * dx + point.y * dy)
+    const min = Math.min(...positions), max = Math.max(...positions)
+    const spansTile = (points.some(point => point.x === 0) && points.some(point => point.x === 15)) ||
+        (points.some(point => point.y === 0) && points.some(point => point.y === 15))
+    const corner = !image.includes("1") && !spansTile
+    const pixels = [...image]
+    for (let i = 0; i < points.length; i++) {
+        const portion = Math.min(3, Math.floor((positions[i] - min) / (max - min + 1) * 4))
+        pixels[points[i].y * 17 + points[i].x] = corner || portion === 0 || portion === 3 ? "y" : "k"
+    }
+    return pixels.join("")
+}
+
 function formatTilemap(map) {
-    const outlined = map.tileset === "compact" ? outlineMap(map) : map
+    let outlined = map.tileset === "compact" ? stripeSharpTurns(outlineMap(map)) : map
+    if (map.tileset === "compact") {
+        const palette = [...new Set([...Array.from({ length: 26 }, (_, i) => i), ...outlined.tiles])]
+        if (palette.length > 256) throw new Error("Tilemap needs more than 256 tiles")
+        const local = new Map(palette.map((index, i) => [index, i]))
+        outlined = { ...outlined, images: palette.map(index => outlined.images[index]),
+            tiles: Uint8Array.from(outlined.tiles, index => local.get(index)) }
+    }
     const hex = tilemapHex(outlined)
     const colors = paletteColors(map)
     const images = outlined.images.map(image => `        img\`
@@ -1500,18 +1613,15 @@ function formatBatch(entries, compact = true) {
     }))
     const baseCount = images.length
     const maps = prepared.map(item => withTrackContext(item.file, () => {
-        const outlined = item.map.tileset === "compact" ? outlineMap(item.map) : item.map
+        const outlined = item.map.tileset === "compact"
+            ? stripeSharpTurns(outlineMap(item.map)) : item.map
         for (const image of outlined.images) {
             if (!imageIndices.has(image)) {
                 imageIndices.set(image, images.length)
                 images.push(image)
             }
         }
-        if (images.length > 256) {
-            throw new Error(`Shared outlined tileset needs ${images.length} images (maximum 256)`)
-        }
-        const tiles = Uint8Array.from(outlined.tiles, index => imageIndices.get(outlined.images[index]))
-        return { ...item, hex: tilemapHex(outlined, tiles), gates: gateHex(item.map) }
+        return { ...item, outlined, gates: gateHex(item.map) }
     }))
     const baseNames = images.slice(0, baseCount).map((image, i) =>
         i === 0 ? "transparency16" :
@@ -1520,12 +1630,28 @@ function formatBatch(entries, compact = true) {
     const variants = new Map()
     const names = images.map((image, i) => {
         if (i < baseCount) return baseNames[i]
-        const base = baseNames[imageIndices.get(image.replaceAll("f", "7"))]
-        const count = (variants.get(base) || 0) + 1
-        variants.set(base, count)
-        return `${base}Outline${count}`
+        const base = baseNames[imageIndices.get(image.replaceAll(/[fyk]/g, "7"))]
+        const kind = /[yk]/.test(image) ? "StripedOutline" : "Outline"
+        const key = `${base}${kind}`
+        const count = (variants.get(key) || 0) + 1
+        variants.set(key, count)
+        return `${key}${count}`
     })
-    const tileset = names.map(name => `myTiles.${name}`)
+    for (const item of maps) {
+        const palette = Array.from({ length: baseCount }, (_, i) => i)
+        const local = new Map(palette.map((index, i) => [index, i]))
+        const tiles = Uint8Array.from(item.outlined.tiles, index => {
+            const shared = imageIndices.get(item.outlined.images[index])
+            if (!local.has(shared)) {
+                local.set(shared, palette.length)
+                palette.push(shared)
+            }
+            return local.get(shared)
+        })
+        if (palette.length > 256) throw new Error(`${item.file}: Tilemap needs more than 256 tiles`)
+        item.hex = tilemapHex(item.outlined, tiles)
+        item.tileset = palette.map(index => `myTiles.${names[index]}`)
+    }
     const resources = {}
     images.forEach((image, i) => {
         resources[names[i]] = {
@@ -1541,7 +1667,7 @@ function formatBatch(entries, compact = true) {
                 mimeType: "application/mkcd-tilemap",
                 data: Buffer.from(`10${item.hex}${"00".repeat(item.map.width * Math.ceil(item.map.height / 2))}`,
                     "utf8").toString("base64"),
-                tileset,
+                tileset: item.tileset,
                 displayName: item.name,
             }
         })
@@ -1555,7 +1681,7 @@ function formatBatch(entries, compact = true) {
         return `            case ${JSON.stringify(item.id)}:
                 return tiles.createTilemap(hex\`${hex}\`, img\`
                 ${walls}
-                \`, sharedTileset, TileScale.Sixteen);`
+                \`, [${item.tileset.join(", ")}], TileScale.Sixteen);`
     }).join("\n")
     const tileFactories = names.map(name =>
         `            case ${JSON.stringify(name)}: return ${name};`).join("\n")
@@ -1566,7 +1692,6 @@ function formatBatch(entries, compact = true) {
 namespace myTiles {
 ${tileDeclarations}
 
-    const sharedTileset = [${tileset.join(", ")}];
     helpers._registerFactory("tilemap", function(name: string) {
         switch (helpers.stringTrim(name)) {
 ${factories}

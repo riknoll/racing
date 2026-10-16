@@ -33,8 +33,8 @@ function readTrack(resources) {
         }
         return Array.from({ length: 16 }, (_, y) => Array.from({ length: 16 }, (_, x) => {
             const color = (image[8 + x * 8 + (y >> 1)] >> ((y & 1) * 4)) & 15
-            if (color !== 0 && color !== 11 && color !== 12) throw new Error(`Unexpected color in tutorial tile: ${name}`)
-            return color === 11 ? "1" : color === 12 ? "f" : "7"
+            if (color !== 0 && color !== 1 && color !== 2 && color !== 11 && color !== 12) throw new Error(`Unexpected color in tutorial tile: ${name}`)
+            return color === 11 ? "1" : color === 1 || color === 2 || color === 12 ? "f" : "7"
         }).join("")).join("\n")
     })
     const tiles = data.subarray(5, 5 + width * height)
@@ -93,7 +93,7 @@ function generate() {
                     const sideways = Math.abs((x + 0.5 - turn.x) * dy - (y + 0.5 - turn.y) * dx)
                     return before > 0 && before <= warningLength && sideways < cornerWidth / 2 + 4
                 })
-                return approaching ? (Math.floor((x + y) / 8) % 2 ? "5" : "k") : color
+                return approaching ? (Math.floor((x + y) / 8) % 2 ? "y" : "k") : color
             }).join("")
             if (!imageIndices.has(striped)) {
                 if (map.images.length === 256) throw new Error("Tutorial warning tiles exceed the tileset limit")
@@ -118,7 +118,7 @@ function generate() {
     for (const original of map.tiles) {
         if (!indices.has(original)) {
             const pixels = [...map.images[original].replace(/\n/g, "")].map(pixel =>
-                pixel === "1" ? 11 : pixel === "f" ? 12 : pixel === "5" ? 5 : pixel === "k" ? 15 : 0)
+                pixel === "1" ? 11 : pixel === "f" || pixel === "y" ? 2 : pixel === "k" ? 1 : 0)
             const data = encodeImage(pixels, 16, 16)
             const name = shared.get(data.toString("base64"))
             indices.set(original, palette.length)
