@@ -411,9 +411,9 @@ namespace racing {
             miniMenu.setStyleProperty(menu, miniMenu.StyleKind.Default, miniMenu.StyleProperty.BorderColor, setupBackground ? 0 : 15);
             miniMenu.setStyleProperty(menu, miniMenu.StyleKind.Selected, miniMenu.StyleProperty.Background, setupBackground ? 0 : 12);
             miniMenu.setStyleProperty(menu, miniMenu.StyleKind.Selected, miniMenu.StyleProperty.BorderColor, setupBackground ? 0 : 9);
-            miniMenu.setDimensions(menu, screen.width - 4, icons ? 66 : 78);
+            miniMenu.setDimensions(menu, screen.width - 4, setupBackground ? 88 : icons ? 66 : 78);
             menu.left = (screen.width - menu.width) / 2;
-            menu.top = icons ? 42 : 31;
+            menu.top = setupBackground ? 24 : icons ? 42 : 31;
             for (let i = 0; i < initialSelection; i++) {
                 miniMenu.moveSelection(menu, miniMenu.MoveDirection.Down);
             }
@@ -460,17 +460,20 @@ namespace racing {
         return labels.map((label, index) => {
             const icon = icons ? icons[index] : undefined;
             const aiIndex = label.indexOf(" AI");
-            const textWidth = aiIndex < 0 ? fancyText.getTextWidth(font, label)
+            let textWidth = aiIndex < 0 ? fancyText.getTextWidth(font, label)
                 : aiLeft + fancyText.getTextWidth(font, "AI");
+            const itemFont = aiIndex < 0 && textLeft + textWidth > screen.width - 16
+                ? fancyText.geometric_sans_9 : font;
+            if (itemFont !== font) textWidth = fancyText.getTextWidth(itemFont, label);
             const height = Math.max(font.lineHeight, icon ? icon.height : 0);
             const picture = image.create(textLeft + textWidth, height);
             if (icon) {
                 picture.drawTransparentImage(icon, Math.idiv(iconWidth - icon.width, 2),
                     Math.idiv(height - icon.height, 2));
             }
-            const textTop = Math.idiv(height - font.lineHeight, 2);
+            const textTop = Math.idiv(height - itemFont.lineHeight, 2);
             fancyText.draw(aiIndex < 0 ? label : label.substr(0, aiIndex),
-                picture, textLeft, textTop, 0, color, font);
+                picture, textLeft, textTop, 0, itemFont === font ? color : 1, itemFont);
             if (aiIndex >= 0) fancyText.draw("AI", picture, textLeft + aiLeft, textTop, 0, aiColor, font);
             return miniMenu.createMenuItem(label, picture);
         });

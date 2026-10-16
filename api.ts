@@ -2,7 +2,7 @@
 //% groups='["Game", "Car"]'
 namespace racing {
     /**
-     * Open the racing menu with Race, Train AI, and View AI.
+     * Open the racing menu with Race, Train AI, View AI, and How to Drive.
      */
     //% blockId=racing_start_game block="start racing game"
     //% help=github:this/docs/start-game

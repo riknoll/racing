@@ -27,7 +27,7 @@ aiRacing.teachDriver()
 - **Down:** reverse. While moving forward this brakes first, then reverses.
 
 The introduction uses geometric text and aligned control-icon and description
-columns, with replaceable 8-by-8 control images in `ai/activity.ts`.
+columns, with shared 8-by-8 control images in `driving-controls.ts`.
 Compact control rows leave room for three lines of driving guidance below.
 Press A to close the help, then A again at the start-teaching prompt to
 begin recording. The teaching block ends after one

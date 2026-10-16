@@ -17,10 +17,12 @@ Batch mode defaults to the compact tileset and includes per-track road gates.
 tiles' 1:2 pixel slope (about 26.6 degrees), and a fixed 26-image road palette:
 grass, full road, four diagonal corners, sixteen shallow edges, and four half tiles.
 Compact mode adds an approximately four-pixel outline without changing road pixels.
+Angled outcroppings with no road bordering any flat edge are removed after tile selection.
 Short adjacent corners are combined when they stay within --simplify deviation.
 Road tiles must have matching sides, except a full road tile can meet a
-half-width slope when its edge follows the rasterized road. Half-width edges
-cannot end in grass. Increase road width or map size if a layout cannot fit.
+half-width slope when its edge follows the rasterized road. Removed outcroppings
+leave flat caps; other half-width edges cannot end in grass.
+Increase road width or map size if a layout cannot fit.
 The default detailed tileset retains the exact pixel-art edges where possible.
 The longest closed SVG path is used as the track centerline. Grass, road,
 and generated edge tiles draw straight road edges at 16 pixels per tile.
@@ -1090,6 +1092,21 @@ function addCompactTiles(masks, width, height, waypoints) {
             `Compact tileset cannot match ${unmatched} road edges (first at ${first.x},${first.y}); increase --width or --size`
         )
     }
+    const outcroppings = []
+    for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+            const index = y * width + x
+            const tile = tiles[index]
+            if (tile < 2 || tile >= 22 || route.has(index)) continue
+            const flatSides = edges[tile].map((edge, side) => edge === 0xffff ? side : -1)
+                .filter(side => side >= 0)
+            if (flatSides.length && flatSides.every(side =>
+                edges[tiles[index + [-width, width, -1, 1][side]]][side ^ 1] === 0)) {
+                outcroppings.push(index)
+            }
+        }
+    }
+    for (const index of outcroppings) tiles[index] = 0
     const terrain = Uint8Array.from(tiles, tile => palette[tile][4] & (1 << 8) ? 1 : 0)
     return { tiles, images: palette.map(maskImage), terrain }
 }
@@ -1603,5 +1620,6 @@ if (require.main === module) {
 
 module.exports = {
     parsePath, extractTrack, extractFinish, simplifyLoop, separateTrack, snapDirections,
-    rasterizePixels, makeTilemap, makeWaypoints, makeGates, formatTilemap, formatBatch, encodeImage,
+    rasterizePixels, addCompactTiles, outlineMap, makeTilemap, makeWaypoints, makeGates,
+    formatTilemap, formatBatch, encodeImage,
 }

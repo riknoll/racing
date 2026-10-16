@@ -1,6 +1,6 @@
 # Start racing game
 
-Open the **Race / Train AI / View AI** menu. Players choose their track and race
+Open the **Race / Train AI / View AI / How to Drive** menu. Players choose their track and race
 options in the game. Trained bot slots are restored from settings.
 These main-menu options use an outlined copy of the racing font in uppercase
 alongside their icons: white letters and pink `AI` suffixes, all with a one-pixel
@@ -8,6 +8,8 @@ color-12 outline. The View AI icon has an opaque color-12 background. Labels
 are rendered into the main-menu row images with a shared column for the `AI`
 suffixes in `TRAIN AI` and `VIEW AI`; navigation and selection still use mini-menu.
 The selected main-menu row has a rounded color-12 background with a rounded cyan border.
+All four entries fit on screen. The longer **How to Drive** label uses the
+compact geometric font so it fits without horizontal scrolling.
 The font copy uses Fancy Text's two-tone font format; titles and other menus keep the original
 racing font. Regenerate the copy after changing the source font with
 `node fonts/create-outlined-racing-font.js`; use `--check` to verify it is current.
@@ -57,7 +59,49 @@ put setup blocks above it rather than below it.
 Importing the extension does not start the game automatically. The repository's
 `main.ts` is a test-only launcher, not part of the imported extension.
 
-### Results preview
+## How to Drive
+
+The interactive tutorial has its own open-ended practice track and uses the
+normal car physics, road/off-road particle effects, and player car artwork.
+Its 64-pixel roads and corner section use the same compact 16-pixel
+road tiles and four-pixel edging as the race courses, rather than drawn lines.
+The hand-authored layout in `tracks/driving-tutorial.jres` spans 4080 by 1024
+pixels, with a broad S-curve, a 64-pixel grass gap, and six sharp corners.
+The generator preserves every road pixel in that source, replacing edge tiles
+with outlined variants and adding neighboring outline-only tiles where needed.
+It does not redraw, resize, or smooth the road.
+Both sides of each tight-turn approach have directional warning signs. The
+preceding 11 tiles (176 pixels) of straightaway edging use yellow/black stripes;
+road pixels and the rest of the outline remain unchanged.
+The outlined map and lesson checkpoints are baked by
+`node tracks/create-driving-tutorial.js`; use `--check` to check the generated
+`driving-tutorial.g.ts` after changing the source layout, generator, or race tile
+artwork. Checkpoint coordinates live in the generator and must follow layout
+edits; generation rejects checkpoint routes that leave the road.
+The car arrives from the left and brakes before the introduction. Lessons cover
+A/Up acceleration, Down reverse, Left/Right steering through gentle curves,
+the slowdown caused by a grass gap, and slowing for right-angle corners.
+The steering lesson caps road speed at 30 pixels/second; the final corners allow
+110 pixels/second so braking or lifting off the accelerator matters.
+As in a race, release A/Up before holding B to brake.
+
+All six controls remain visible on the left, with arrows in a connected D-pad
+and A diagonally above and to the right of B. Instructions highlight the
+relevant buttons; practice highlights actual presses. Controls stay locked
+while instructions type and during each `OK!` stop. Fancy Text animates the
+geometric text character by character, with expanding rounded color-12
+backgrounds two pixels below the top edge. The car stays below the instructions.
+Button artwork is shared with training in `driving-controls.ts`.
+
+Each driving lesson advances based only on the car's X position, assuming the
+player follows the road. Reaching the end of the curves completes steering;
+reaching 96 pixels beyond the grass gap completes that lesson. Reaching the
+finish line's X position triggers congratulations and returns to the main menu,
+without requiring precise checkpoint visits or a particular Y position.
+Tutorial progress does not save race times or modify AI training data.
+TypeScript callers can also start it with `racing.howToDrive()`.
+
+## Results preview
 
 Set `PREVIEW_RACE_RESULTS` to `true` in `main.ts` to launch directly into sample
 four-lap race results using the real results renderer. It is disabled by default.

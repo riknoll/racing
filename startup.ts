@@ -10,14 +10,16 @@ namespace racing {
         try {
             aiRacing.loadBots();
             aiRacing.getTrainingDriver();
-            const icons = [racing.getPlayerCarFrames()[1], racing.getCarFrames(1)[1], memoryMenuIcon()];
+            const icons = [racing.getPlayerCarFrames()[1], racing.getCarFrames(1)[1],
+                memoryMenuIcon(), racing.getPlayerCarFrames()[0]];
             while (true) {
-                const selected = chooseMenu("RACING", ["Race", "Train AI", "View AI"], false, icons, 0,
+                const selected = chooseMenu("RACING", ["Race", "Train AI", "View AI", "How to Drive"], false, icons, 0,
                     startMenuRaceBackground);
                 if (selected < 0) break;
                 if (selected === 0) chooseRace();
                 else if (selected === 1) chooseTraining();
-                else viewAI();
+                else if (selected === 2) viewAI();
+                else howToDrive();
                 releaseMenuButtons();
             }
         } finally {

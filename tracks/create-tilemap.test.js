@@ -87,7 +87,8 @@ function assertCompactBorders(map) {
                         `road tiles disagree at ${x},${y} on their ${first} border`)
                 } else {
                     const count = (a + b).replaceAll("7", "").length
-                    assert.ok(count <= 1 || count >= 15,
+                    // Removed narrow outcroppings leave an eight-pixel flat cap.
+                    assert.ok(count <= 1 || count === 8 || count >= 15,
                         `partial road edge ends in grass at ${x},${y} on its ${first} border`)
                 }
             }

@@ -1,26 +1,6 @@
 namespace aiRacing {
     export const MIN_EXAMPLES = 40;
     export const MIN_ATTEMPT_TIME_MS = 180000;
-    const trainingAButtonIcon = img`
-        . . 6 6 6 6 . .
-        . 6 6 1 1 6 6 .
-        6 6 1 6 6 1 6 6
-        6 6 1 6 6 1 6 6
-        6 6 1 1 1 1 6 6
-        8 6 1 6 6 1 6 8
-        . 8 6 6 6 6 8 .
-        . . 8 8 8 8 . .
-    `;
-    const trainingBButtonIcon = img`
-        . . 6 6 6 6 . .
-        . 6 1 1 1 6 6 .
-        6 6 1 6 6 1 6 6
-        6 6 1 1 1 6 6 6
-        6 6 1 6 6 1 6 6
-        8 6 1 1 1 1 6 8
-        . 8 6 6 6 6 8 .
-        . . 8 8 8 8 . .
-    `;
     let track: Track;
     let driver: Driver;
     let player: LearningCar;
@@ -176,7 +156,7 @@ namespace aiRacing {
         });
         const startFont = fancyText.geometric_sans_6;
         const startPrompt = image.create(12 + fancyText.getTextWidth(startFont, "Start teaching"), 11);
-        startPrompt.drawTransparentImage(trainingAButtonIcon, 0, 1);
+        startPrompt.drawTransparentImage(racing.drivingControls.a, 0, 1);
         fancyText.draw("Start teaching", startPrompt, 12, 1, 0, 1, startFont);
         scene.createRenderable(100, (target, camera) => {
             if (!watchedCar || showingMessage || status !== "READY") return;
@@ -199,37 +179,13 @@ namespace aiRacing {
         centeredText("TEACH THE AI", 5, fancyText.geometric_sans_7, 5);
         centeredText("Drive " + laps + (laps === 1 ? " lap" : " laps") + " to teach it.", 17, font, 1);
 
-        const up = img`
-            . . . 1 1 . . .
-            . . 1 1 1 1 . .
-            . 1 1 1 1 1 1 .
-            1 1 1 1 1 1 1 1
-            1 1 1 1 1 1 1 1
-            . . 1 1 1 1 . .
-            . . 1 1 1 1 . .
-            . . 1 1 1 1 . .
-        `;
-        const down = up.clone();
-        down.flipY();
-        const left = img`
-            . . . 1 1 . . .
-            . . 1 1 1 . . .
-            . 1 1 1 1 1 1 1
-            1 1 1 1 1 1 1 1
-            1 1 1 1 1 1 1 1
-            . 1 1 1 1 1 1 1
-            . . 1 1 1 . . .
-            . . . 1 1 . . .
-        `;
-        const right = left.clone();
-        right.flipX();
         const accelerate = image.create(20, 8);
-        accelerate.drawTransparentImage(trainingAButtonIcon, 0, 0);
-        accelerate.drawTransparentImage(up, 12, 0);
+        accelerate.drawTransparentImage(racing.drivingControls.a, 0, 0);
+        accelerate.drawTransparentImage(racing.drivingControls.up, 12, 0);
         const steer = image.create(20, 8);
-        steer.drawTransparentImage(left, 0, 0);
-        steer.drawTransparentImage(right, 12, 0);
-        const controls = [accelerate, trainingBButtonIcon, steer, down];
+        steer.drawTransparentImage(racing.drivingControls.left, 0, 0);
+        steer.drawTransparentImage(racing.drivingControls.right, 12, 0);
+        const controls = [accelerate, racing.drivingControls.b, steer, racing.drivingControls.down];
         const descriptions = ["Accelerate", "Brake", "Steer", "Reverse"];
         const columnLeft = Math.idiv(picture.width - 136, 2);
         const rowHeight = 10;
@@ -247,7 +203,7 @@ namespace aiRacing {
         centeredText("Show off-road recovery.", 83, font, 1);
         centeredText("It learns your mistakes, too.", 92, font, 1);
         const continueLeft = Math.idiv(picture.width - 12 - fancyText.getTextWidth(font, "Continue"), 2);
-        picture.drawTransparentImage(trainingAButtonIcon, continueLeft, 106);
+        picture.drawTransparentImage(racing.drivingControls.a, continueLeft, 106);
         fancyText.draw("Continue", picture, continueLeft + 12, 106, 0, 1, font);
         return picture;
     }
