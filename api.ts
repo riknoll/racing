@@ -12,6 +12,16 @@ namespace racing {
     }
 
     /**
+     * Start the How to Drive lesson without opening the racing menu.
+     */
+    //% blockId=racing_learn_to_drive block="learn to drive"
+    //% help=github:this/docs/learn-to-drive
+    //% group="Game" weight=95
+    export function learnToDrive(): void {
+        howToDrive();
+    }
+
+    /**
      * Race a selected track without opening the game menu.
      * @param track the race course
      * @param laps the number of laps, eg: 1

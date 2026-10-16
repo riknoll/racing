@@ -5,6 +5,7 @@ See [AI racing](ai/README.md) for the added teaching activity.
 ## Blocks
 
 - [Start racing game](docs/start-game.md): open the Race / Train AI / View AI menu.
+- [Learn to drive](docs/learn-to-drive.md): launch How to Drive directly, without opening the menu.
 - [Race on a track](docs/race-on-track.md): choose a map and lap count in blocks.
 - [Teach AI by driving one lap](ai/docs/teach-driver.md): train a driver on Monaco.
 - [Set car logo](docs/set-car-logo.md): draw an 8x8 sponsor badge for the player car.
