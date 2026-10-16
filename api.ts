@@ -1,4 +1,4 @@
-//% color="#007f86" icon="\uf1b9" block="Racing" weight=100
+//% color="#00A19B" icon="\uf1b9" block="Racing" weight=100
 //% groups='["Game", "Car"]'
 namespace racing {
     /**
