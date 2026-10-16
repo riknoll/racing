@@ -1,4 +1,4 @@
-//% color="#007f86" icon="\uf1b9" block="Racing" weight=100
+//% color="#00A19B" icon="\uf1b9" block="Racing" weight=100
 //% groups='["Game", "Car"]'
 namespace racing {
     /**
@@ -9,6 +9,16 @@ namespace racing {
     //% group="Game" weight=100
     export function startGame(): void {
         runGameMenu([], false, false);
+    }
+
+    /**
+     * Start the How to Drive lesson without opening the racing menu.
+     */
+    //% blockId=racing_learn_to_drive block="learn to drive"
+    //% help=github:this/docs/learn-to-drive
+    //% group="Game" weight=95
+    export function learnToDrive(): void {
+        howToDrive();
     }
 
     /**
