@@ -24,8 +24,14 @@ namespace aiRacing {
             if (finished || this.car.elapsedMillis >= this.timeLimit || cancel) {
                 this.cancelled = cancel && !finished;
                 this.ended = true;
-                this.car.stop();
+                this.car.brakeToStop();
             }
+        }
+
+        result(): racing.RaceResult {
+            const finished = this.car.completedGates >= this.track.gates.length;
+            const laps = finished ? [new racing.LapResult(this.car.elapsedMillis, false)] : [];
+            return new racing.RaceResult(laps, this.car.elapsedMillis, false);
         }
 
         summary(): string {
@@ -58,7 +64,7 @@ namespace aiRacing {
         game.pushScene();
         let watch: LapWatch;
         let display: racing.DrivingDisplay;
-        let showingMessage = false;
+        let showingResults = false;
         try {
             tiles.setCurrentTilemap(selectedCourse.tilemap);
             scene.setBackgroundImage(racing.generateBackground(selectedCourse.backgroundTileset));
@@ -68,7 +74,7 @@ namespace aiRacing {
             activeWatch = watch;
             display = new racing.DrivingDisplay(watch.track.gates, watch.car, 1);
             scene.createRenderable(100, target => {
-                if (showingMessage) return;
+                if (showingResults) return;
                 target.fillRect(54, 111, 39, 8, 15);
                 target.print("B back", 56, 113, 1, image.font5);
             });
@@ -79,10 +85,14 @@ namespace aiRacing {
                     watch.car.y + 30 * Math.sin(watch.car.heading));
             });
             while (!watch.ended) pause(20);
-            showingMessage = true;
+            showingResults = true;
             display.setVisible(false);
             if (racing.skipTestPrompts()) console.log(watch.summary());
-            else game.showLongText(watch.summary(), DialogLayout.Full);
+            else {
+                const result = watch.result();
+                racing.showRaceResults(result, result.laps.length ? undefined
+                    : watch.cancelled ? "WATCH STOPPED" : "TIME LIMIT");
+            }
             racing.releaseMenuButtons();
         } finally {
             if (display) display.destroy();

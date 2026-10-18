@@ -3,14 +3,16 @@
 Reset a second car to the start and let the trained model attempt one lap.
 
 From the starting menu, **View AI** opens the selected bot's steering/pedal
-graphs. Press A there and choose **Watch a lap** to run that bot on the track
-it was trained on, or **Watch another track** to choose a different course.
-The picker includes the six regular maps and Test Track, excluding the bot's
-training track. Back from the picker returns to the action menu without starting
+graphs. Press **A / Choose Track** to open the track picker directly.
+Press B on the chart to return directly to the main menu.
+The picker includes all six regular maps and Test Track, including the bot's
+training track. Back from the picker returns to the graphs without starting
 a watch. The watch ends after a lap or its time limit; B returns early.
+The car brakes to a stop behind the animated race results screen. A completed
+watch shows lap and total times without a placement. An unfinished watch shows
+its elapsed time and a time-limit or stopped status, not a completed lap.
 It returns to the graphs without changing the saved model or its training-track
-metadata. A model may struggle on an unfamiliar course. **Back** from the
-action menu returns to the starting menu.
+metadata. A model may struggle on an unfamiliar course.
 
 From TypeScript, an optional course chooses the watch track:
 
@@ -44,9 +46,11 @@ The attempt ends after one lap or when its time limit is reached. The limit is
 the longer of three minutes or 1.5 times your teaching time. There is no manual
 finish-early shortcut. Only one attempt runs automatically.
 
-The report shows elapsed time, on-road percentage, and checkpoints reached.
-An incomplete attempt is not presented as a completed lap. Predictions and
-results do not add training examples.
+The View AI results show lap and total times. An incomplete attempt shows only
+elapsed time and its stopped or time-limit status, not a completed lap.
+The TypeScript `testDriver()` report also includes on-road percentage and
+checkpoints reached. Predictions and results do not add training examples or
+update player race records.
 
 ## Limits and experiments
 

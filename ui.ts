@@ -642,7 +642,7 @@ namespace racing {
         target.fillRect(left, top + 2, width, height - 4, color);
     }
 
-    export function showRaceResults(result: RaceResult): void {
+    export function showRaceResults(result: RaceResult, status?: string): void {
         const font = fancyText.geometric_sans_7;
         const textImage = (text: string, textFont: fancyText.BaseFont, color: number) => {
             const picture = image.create(fancyText.getTextWidth(textFont, text), textFont.lineHeight);
@@ -650,11 +650,16 @@ namespace racing {
             return picture;
         };
         const title = textImage("RESULTS", customFont.racing, 1);
-        const lastTwoDigits = result.place % 100;
-        const lastDigit = result.place % 10;
-        const suffix = lastTwoDigits >= 11 && lastTwoDigits <= 13 ? "th"
-            : lastDigit === 1 ? "st" : lastDigit === 2 ? "nd" : lastDigit === 3 ? "rd" : "th";
-        const placement = textImage(result.place + suffix + " Place" + (result.place === 1 ? "!" : ""), font, 5);
+        let placement: Image;
+        if (result.place !== undefined) {
+            const lastTwoDigits = result.place % 100;
+            const lastDigit = result.place % 10;
+            const suffix = lastTwoDigits >= 11 && lastTwoDigits <= 13 ? "th"
+                : lastDigit === 1 ? "st" : lastDigit === 2 ? "nd" : lastDigit === 3 ? "rd" : "th";
+            placement = textImage(result.place + suffix + " Place" + (result.place === 1 ? "!" : ""), font, 5);
+        } else if (status) {
+            placement = textImage(status, font, 5);
+        }
         const newBest = textImage("NEW!", font, 5);
         const help = textImage("Press A", fancyText.geometric_sans_6, 1);
         const dimHelp = help.clone();
@@ -694,7 +699,8 @@ namespace racing {
         const columnGap = Math.idiv(width - 16 - labelWidth - timeWidth - newBest.width, 2);
         const timeLeft = 8 + labelWidth + columnGap;
         const newBestLeft = width - 8 - newBest.width;
-        const height = 64 + result.laps.length * 14;
+        const rowOffset = placement ? 0 : -14;
+        const height = 64 + result.laps.length * 14 + rowOffset;
         const top = Math.idiv(screen.height - height, 2);
         const started = game.runtime();
         let animationComplete = false;
@@ -704,18 +710,20 @@ namespace racing {
             const left = Math.round((screen.width - width) / 2
                 - width * Math.pow(1 - panelProgress, 3));
             const titleLeft = left + Math.idiv(width - title.width, 2);
-            const placementLeft = left + Math.idiv(width - placement.width, 2);
             drawRoundedBackground(target, titleLeft - 4, top + 1, title.width + 7, title.height + 4);
             target.drawTransparentImage(title, titleLeft, top + 3);
-            drawRoundedBackground(target, placementLeft - 4, top + 22, placement.width + 8, placement.height + 1);
-            target.drawTransparentImage(placement, placementLeft, top + 23);
+            if (placement) {
+                const placementLeft = left + Math.idiv(width - placement.width, 2);
+                drawRoundedBackground(target, placementLeft - 4, top + 22, placement.width + 8, placement.height + 1);
+                target.drawTransparentImage(placement, placementLeft, top + 23);
+            }
 
             for (let i = 0; i <= result.laps.length; i++) {
                 const rowProgress = Math.max(0, Math.min(1, (elapsed - panelDuration - i * rowDelay) / rowDuration));
                 if (rowProgress === 0) continue;
                 const rowLeft = left + Math.round(screen.width * Math.pow(1 - rowProgress, 3));
                 const isTotal = i === result.laps.length;
-                const rowTop = top + (isTotal ? 39 : 36) + i * 14;
+                const rowTop = top + (isTotal ? 39 : 36) + i * 14 + rowOffset;
                 const isNewBest = isTotal ? result.newBestTotal : result.laps[i].newBest;
                 drawRoundedBackground(target, rowLeft, rowTop - 1, width, font.lineHeight + 1);
                 target.drawTransparentImage(labels[i], rowLeft + 8, rowTop);

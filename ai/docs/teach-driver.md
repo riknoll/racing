@@ -50,16 +50,25 @@ are not cleared.
 
 ## Your AI's memories
 
-After teaching, an animated dot chart shows the examples actually stored in the
-model. **Left/Right** switches between steering and pedal views; **B** opens an
-explanation and action counts. From the starting menu's Train AI option, **A**
-returns to that menu. The trained model is retained for Race and View AI.
+After teaching, an animated quadrant chart shows the examples actually stored in the
+model. **Left/Right** switches between steering and pedal pages; **B** returns
+to the main menu. **A** keeps its existing continuation: returning to the menu
+after training, or choosing a track directly from View AI. The track picker
+includes every regular map and Test Track, including the training track;
+backing out returns to the chart. The footer uses arrow
+and A-button artwork with the labels **Page** and **Choose Track**.
+The trained model is retained for Race and View AI.
 
 - Left/right on the chart is the aiming angle toward the road ahead.
-- Higher dots mean faster forward speed; the bottom includes stops and reversing.
-- Colors and marker shapes identify left/straight/right, or coast/accelerate/brake/reverse.
-- Legend numbers count stored examples, not button presses. Steering and pedal
-  totals each add up to the number of examples.
+- Higher squares mean faster forward speed; the bottom includes stops and reversing.
+- Each sample is a solid 2-by-2 colored square. A single-line color key identifies
+  left/straight/right, or coast/accelerate/brake/reverse, without per-action counts.
+- Color-12 dotted horizontal and vertical axes extend outward from a tiny
+  central cross above the samples. FAST/SLOW and
+  LEFT/RIGHT labels are centered on their dotted axes inside the plot, with
+  yellow geometric text on rounded color-12 backgrounds. Other text has no
+  background. The heading is simply **MEMORIES**, in the racing font, with no
+  saved-memory count above the plot.
 
 This is a two-dimensional view of seven inputs. Small aiming angles are spread
 out to make patterns easier to see; extreme values are clipped to the plot.

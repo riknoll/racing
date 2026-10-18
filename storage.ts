@@ -19,7 +19,7 @@ namespace racing {
             public laps: LapResult[],
             public totalTime: number,
             public newBestTotal: boolean,
-            public place: number
+            public place?: number
         ) {
         }
     }

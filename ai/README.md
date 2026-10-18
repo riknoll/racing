@@ -11,9 +11,9 @@ The starting menu offers **Race**, **Train AI**, and **View AI**.
   Continue/Retry decisions. New training replaces only the chosen slot.
 - **View AI:** choose a slot to inspect its stored examples. Empty slots show
   zero examples; there is no scripted opponent. After viewing a trained bot's
-  graphs, A opens **Watch a lap / Watch another track / Back**. **Watch a lap**
-  uses its training track; **Watch another track** lets you choose any other
-  regular map or Test Track. Back from that picker returns to the action menu.
+  graphs, **A / Choose Track** opens the track picker directly. Choose any of
+  the six regular maps or Test Track, including its training track.
+  Back from that picker returns to the graphs; B on the graphs returns to the main menu.
   Watching returns to the graphs afterward and does not change its examples or
   recorded training track. AI watch/test
   attempts allow at least three minutes, or 1.5 times the teaching duration when
@@ -25,7 +25,7 @@ Use **Up/Down** and **A** in menus, with **B** to go back. In a car, **A / Up**
 accelerates, **B** brakes, **Left/Right** steers, and **Down** reverses.
 
 After teaching, inspect an animated map of the AI's saved examples. **Left/Right**
-switches between steering and pedals, **B** explains the chart, and **A** returns
+switches between steering and pedals, **B** goes back, and **A** returns
 to the menu. Racing and viewing do not add training examples. Training is kept
 between menu choices and automatically restored after restarting the same project.
 Two bot slots use separate buffers but share the settings quota. A typical

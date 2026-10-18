@@ -15,6 +15,7 @@ namespace aiRacing {
         private recordTimer = 0;
         private decisionTimer = 0;
         private previousPedal = -1;
+        private stopping = false;
 
         constructor(stats: racing.RacerStats, frames: Image[], public track?: Track) {
             super(stats, frames);
@@ -23,6 +24,11 @@ namespace aiRacing {
 
         update(deltaTimeMillis: number): void {
             if (this.paused) return;
+            if (this.stopping) {
+                super.update(deltaTimeMillis);
+                if (this.speed === 0) this.stop();
+                return;
+            }
             if (this.driver && !this.track) throw "Set a track before teaching or testing the AI";
             if (this.track) this.track.updateProgress(this);
             if (this.controlEnabled) {
@@ -54,7 +60,14 @@ namespace aiRacing {
             }
         }
 
+        brakeToStop(): void {
+            this.stopping = true;
+            this.controlEnabled = false;
+            this.controlState = racing.ControlStateFlag.BrakingOn;
+        }
+
         stop(): void {
+            this.stopping = false;
             this.paused = true;
             this.controlEnabled = false;
             this.controlState = 0;

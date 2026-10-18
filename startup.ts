@@ -73,27 +73,12 @@ namespace racing {
         const bot = aiRacing.botSlot(slot);
         while (true) {
             const trained = bot.driver.count() >= aiRacing.MIN_EXAMPLES;
-            aiRacing.showTrainingSummary(bot.driver, trained ? "options" : "back", aiRacing.botInfo(slot));
-            if (!trained) return;
-            if (!chooseWatch(bot)) return;
-        }
-    }
-
-    function chooseWatch(bot: aiRacing.BotSlot): boolean {
-        while (true) {
-            const selected = chooseMenu("View AI", ["Watch a lap", "Watch another track", "Back"]);
-            if (selected < 0 || selected === 2) return false;
-            if (selected === 0) {
-                aiRacing.watchBotLap(bot.index);
-                return true;
-            }
+            const confirmed = aiRacing.showTrainingSummary(bot.driver);
+            if (!confirmed || !trained) return;
             const courses = getTrainingCourses();
-            const trainingCourse = bot.courseIndex === 6 ? courses[0] : getCourses()[bot.courseIndex];
-            const otherCourses = courses.filter(course => course !== trainingCourse);
-            const course = chooseTrackMenu("Watch track", otherCourses);
+            const course = chooseTrackMenu("Watch track", courses);
             if (course < 0) continue;
-            aiRacing.watchBotLap(bot.index, otherCourses[course]);
-            return true;
+            aiRacing.watchBotLap(bot.index, courses[course]);
         }
     }
 }
