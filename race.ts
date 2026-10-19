@@ -86,6 +86,7 @@ namespace racing {
             car.y = firstGate.y + column * spacing * Math.sin(orthogonalAngle) + row * spacing * Math.sin(startingAngle + Math.PI);
 
             car.heading = startingAngle;
+            car.updateAnimationFrame();
             if (car instanceof aiRacing.LearningCar) {
                 car.lastTrackX = car.x;
                 car.lastTrackY = car.y;

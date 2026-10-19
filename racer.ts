@@ -199,7 +199,11 @@ namespace racing {
             this.vx = this.speed * Math.cos(this.heading);
             this.vy = this.speed * Math.sin(this.heading);
 
-            // animation
+            this.updateAnimationFrame();
+        }
+
+        /** Refresh the directional image without advancing the car's driving state. */
+        updateAnimationFrame(): void {
             const numFrames = this.frames.length;
             const angle = mathUtils.clampRadians(this.heading);
 
