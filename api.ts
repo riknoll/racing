@@ -1,6 +1,13 @@
 //% color="#00A19B" icon="\uf1b9" block="Racing" weight=100
 //% groups='["Game", "Car"]'
 namespace racing {
+    export enum RaceDriver {
+        //% block="player"
+        Player,
+        //% block="AI"
+        AI
+    }
+
     /**
      * Open the racing menu with Race, Train AI, View AI, and How to Drive.
      */
@@ -25,13 +32,15 @@ namespace racing {
      * Race a selected track without opening the game menu.
      * @param track the race course
      * @param laps the number of laps, eg: 1
+     * @param driver who drives the car
      */
-    //% blockId=racing_race_on_track block="race on $track for $laps laps"
+    //% blockId=racing_race_on_track block="race on $track for $laps laps as $driver"
     //% help=github:this/docs/race-on-track
     //% group="Game" weight=90
     //% track.defl=racing.Track.Monaco
     //% laps.min=1 laps.max=4 laps.defl=1
-    export function raceOnTrack(track: Track, laps: number = 1): void {
+    //% driver.defl=racing.RaceDriver.Player
+    export function raceOnTrack(track: Track, laps: number = 1, driver: RaceDriver = RaceDriver.Player): void {
         const courses = getCourses();
         let course: Course;
         switch (track) {
@@ -43,9 +52,24 @@ namespace racing {
             case Track.Italy: course = courses[2]; break;
             default: throw "Choose a valid racing track";
         }
+        if (driver !== RaceDriver.Player && driver !== RaceDriver.AI) throw "Choose a valid race driver";
         laps = Math.max(1, Math.min(4, laps)) | 0;
         aiRacing.loadBots();
-        startRace(course, laps, 3);
+        let bot: aiRacing.BotSlot;
+        if (driver === RaceDriver.AI) {
+            const trained = aiRacing.trainedBots();
+            if (!trained.length) {
+                showTrainingRequired();
+                return;
+            }
+            if (trained.length === 1) bot = trained[0];
+            else {
+                const names = aiRacing.botNames();
+                const selected = chooseMenu("SELECT AI", trained.map(slot => names[slot.index]), false);
+                bot = trained[selected];
+            }
+        }
+        startRace(course, laps, 3, RaceSpeed.Fast, bot);
     }
 
     /**
