@@ -1,6 +1,6 @@
 {
-    "name": "AI Racing",
-    "version": "0.0.0",
+    "name": "Ready Set Race!",
+    "version": "0.1.0",
     "files": [
         "storage.ts",
         "effects.ts",
@@ -43,6 +43,7 @@
         "ai/docs/prebuilt-bots.md",
         "ai/docs/test-track.md",
         "docs/start-game.md",
+        "docs/learn-to-drive.md",
         "docs/race-on-track.md",
         "docs/set-car-logo.md"
     ],

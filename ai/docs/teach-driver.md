@@ -1,9 +1,11 @@
-# Teach AI by driving one lap
+# Teach AI by driving one lap on a track
 
-The teaching block in the **Racing** category records a single driving attempt on
-Monaco; the starting menu
-can choose any race track or the [Test Track](test-track.md), followed by 1–4
-continuous training laps. The Test Track defaults to three laps.
+The teaching block in the **Racing** category records one driving lap on the
+selected course. Its dropdown offers [Test Track](test-track.md) (the default),
+Australia, Great Britain, Italy, Monaco, Netherlands, and USA.
+The block always teaches **one lap**, including on Test Track.
+The starting menu can instead choose a course followed by 1–4 continuous
+training laps; menu training on Test Track defaults to three laps.
 The AI learns from your current road
 position and the controls you use, not from a replay of the lap.
 
@@ -16,8 +18,13 @@ camera looks ahead along the car's heading rather than hiding the track under
 a separate AI HUD.
 
 ```sig
-aiRacing.teachDriver()
+aiRacing.teachDriver(racing.TrainingTrack.TestTrack)
 ```
+
+Calling `aiRacing.teachDriver()` without an argument now selects Test Track.
+Pass `racing.TrainingTrack.Monaco` explicitly to keep the previous course.
+Each new lesson uses the selected track, even after teaching on a different
+course in the same program.
 
 ## Controls
 
@@ -78,12 +85,12 @@ the chart does not change the model.
 ## Example
 
 ```blocks
-aiRacing.teachDriver()
-racing.startGame()
+aiRacing.teachDriver(racing.TrainingTrack.Monaco)
+racing.raceOnTrack(racing.Track.Monaco, 1, racing.RaceDriver.AI)
 ```
 
-After teaching, choose **View AI** in the racing menu to inspect the saved bot
-and watch it drive.
+This example teaches on Monaco, then watches the trained AI race there without
+opening the game menu.
 
 ## Reading the code
 

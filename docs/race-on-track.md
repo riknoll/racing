@@ -1,18 +1,46 @@
 # Race on a track
 
-Start a race directly, without opening the menu. Choose Australia, Great Britain,
-Italy, Monaco, Netherlands, or USA, and **1-4 laps**. This block keeps three
+Start a single race directly, without opening the game menu. Choose Australia, Great Britain,
+Italy, Monaco, Netherlands, or USA, **1-4 laps**, and **player** or **AI** in the
+driver dropdown. The default is **player**, so existing programs keep their
+normal controls. This block keeps three
 opponents and Fast speed; the game menu offers configurable race options.
 
 ```sig
-racing.raceOnTrack(racing.Track.Monaco, 1)
+racing.raceOnTrack(racing.Track.Monaco, 1, racing.RaceDriver.Player)
 ```
 
 ## Example
 
 ```blocks
-racing.raceOnTrack(racing.Track.Monaco, 2)
+racing.raceOnTrack(racing.Track.Monaco, 2, racing.RaceDriver.Player)
 ```
+
+## Watch an AI race
+
+Choose **AI** to let a trained AI drive the followed car for the selected number
+of laps, with the same opponents, countdown, instruments, and results screen.
+If only one AI is trained, it starts automatically. If more than one is trained,
+a menu lists only the trained AIs so you can choose one. Use Up/Down to select
+an AI and A to start the race; B does not cancel this block's picker.
+The game menus still support B to go back.
+Press B during an AI race to return, even if the AI gets stuck.
+
+```blocks
+racing.raceOnTrack(racing.Track.Monaco, 2, racing.RaceDriver.AI)
+```
+
+If no AI is trained, a styled **TRAIN AI** message explains that you must use a
+training block first. Press A (**OK**) to dismiss the message; no race starts,
+and the program continues with the next block. It never falls back to the game
+menu or repeats the race. Use
+[teach AI by driving one lap](../ai/docs/teach-driver.md) before this block to
+train an AI first. Unsaved AIs trained in the current session can race too.
+
+Watching never adds training examples or changes the player's saved race
+records. AI results show lap times and placement without new-best markers.
+
+## Player racing
 
 The player drives with the normal racing controls and instruments. Completed-lap
 timers stack above the position indicator on the right. A pink chevron centered

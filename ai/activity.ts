@@ -17,13 +17,17 @@ namespace aiRacing {
     let drivingDisplay: racing.DrivingDisplay;
 
     /**
-     * Record one lap of player driving.
+     * Record one lap of player driving on the selected training track.
+     * @param track the course to teach on
      */
-    //% blockId=racing_ai_teach block="teach AI by driving one lap"
+    //% blockId=racing_ai_teach block="teach AI by driving one lap on $track"
     //% help=github:this/ai/docs/teach-driver
     //% blockNamespace=racing group="Game" weight=80
-    export function teachDriver(): void {
-        teachLesson("race", racing.getCourses()[3], selectedBot, 1);
+    //% track.defl=racing.TrainingTrack.TestTrack
+    export function teachDriver(track: racing.TrainingTrack = racing.TrainingTrack.TestTrack): void {
+        const courses = racing.getTrainingCourses();
+        if (track < 0 || track >= courses.length || track !== Math.floor(track)) throw "Choose a valid training track";
+        teachLesson("race", courses[track], selectedBot, 1);
     }
 
     function teachLesson(continueText: string, course: racing.Course, slot: number, laps: number): void {
@@ -139,12 +143,12 @@ namespace aiRacing {
     }
 
     function initialize(course: racing.Course): void {
-        if (initialized) return;
-        initialized = true;
         tiles.setCurrentTilemap(course.tilemap);
         scene.setBackgroundImage(racing.generateBackground(course.backgroundTileset));
         scroller.scrollBackgroundWithCamera(scroller.CameraScrollMode.BothDirections);
         track = course.createTrack();
+        if (initialized) return;
+        initialized = true;
         game.onUpdate(() => {
             for (const effects of carEffects) effects.update();
             if (!watchedCar) return;

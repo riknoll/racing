@@ -1,4 +1,16 @@
 namespace racing {
+    export enum TrainingTrack {
+        //% block="Test Track"
+        TestTrack,
+        Australia,
+        //% block="Great Britain"
+        GreatBritain,
+        Italy,
+        Monaco,
+        Netherlands,
+        USA
+    }
+
     export enum PreviewScrollDirection {
         N,
         E,
