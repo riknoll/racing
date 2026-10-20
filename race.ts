@@ -14,7 +14,8 @@ namespace racing {
         Fast
     }
 
-    export function startRace(course: Course, totalLaps: number, numOpponents: number, speed: RaceSpeed = 2) {
+    export function startRace(course: Course, totalLaps: number, numOpponents: number, speed: RaceSpeed = 2, bot?: aiRacing.BotSlot) {
+        if (bot && bot.driver.count() < aiRacing.MIN_EXAMPLES) throw "Train this AI before watching it race";
         let speedStat: number;
         switch (speed) {
             case RaceSpeed.Slow: speedStat = 50; break;
@@ -39,10 +40,12 @@ namespace racing {
                 100,
             );
 
-        const player = new racing.Car(
-            stats,
-            racing.getPlayerCarFrames()
-        );
+        const aiPlayer = bot ? new aiRacing.LearningCar(stats, racing.getPlayerCarFrames(), track) : undefined;
+        const player: racing.Car = aiPlayer || new racing.Car(stats, racing.getPlayerCarFrames());
+        if (aiPlayer) {
+            aiPlayer.driver = bot.driver;
+            aiPlayer.paused = true;
+        }
 
         const places: racing.Car[] = [];
 
@@ -54,7 +57,7 @@ namespace racing {
             const opponent = new aiRacing.LearningCar(stats, racing.getCarFrames(i), track);
             opponents.push(opponent);
 
-            if (botSlot && botSlot.driver.count() > aiRacing.MIN_EXAMPLES) {
+            if (botSlot && botSlot.driver.count() >= aiRacing.MIN_EXAMPLES) {
                 opponent.driver = botSlot.driver;
                 opponent.paused = true;
             }
@@ -83,6 +86,11 @@ namespace racing {
             car.y = firstGate.y + column * spacing * Math.sin(orthogonalAngle) + row * spacing * Math.sin(startingAngle + Math.PI);
 
             car.heading = startingAngle;
+            car.updateAnimationFrame();
+            if (car instanceof aiRacing.LearningCar) {
+                car.lastTrackX = car.x;
+                car.lastTrackY = car.y;
+            }
             places.push(car);
         }
 
@@ -92,6 +100,8 @@ namespace racing {
         const lapTimes: number[] = [];
         const lapTimeSprites: timerSprite.TimerSprite[] = [];
         let finished = false;
+        let cancelled = false;
+        let lastLap = player.currentLap;
         let result: RaceResult;
         let displayedAccelerationRatio = 0;
 
@@ -117,6 +127,13 @@ namespace racing {
             racing.drawSpeedometer(19, 20, 99, player.speed, player.stats.topSpeed,
                 displayedAccelerationRatio);
             racing.drawPlacemarker(135, RACE_PLACE_MARKER_TOP, placement);
+            if (aiPlayer) {
+                const font = fancyText.tiny_4;
+                const width = fancyText.getTextWidth(font, "B BACK");
+                const left = Math.idiv(target.width - width, 2);
+                drawRoundedBackground(target, left - 4, 111, width + 8, font.lineHeight + 2);
+                fancyText.draw("B BACK", target, left, 112, 0, 1, font);
+            }
         });
 
         const accelerationHandler = eventContext.registerFrameHandler(scene.PRE_RENDER_UPDATE_PRIORITY + 1, () => {
@@ -128,9 +145,9 @@ namespace racing {
         });
 
         const handler = eventContext.registerFrameHandler(scene.UPDATE_PRIORITY, () => {
-            const currentLap = player.currentLap;
             if (!finished) {
-                player.checkGateOverlaps(gates);
+                if (aiPlayer) track.updateProgress(aiPlayer);
+                else player.checkGateOverlaps(gates);
                 player.distance = track.calculateDistance(player);
             }
 
@@ -149,15 +166,18 @@ namespace racing {
 
             carEffects.update();
 
-            if (!finished && player.currentLap !== currentLap) {
+            if (!finished && player.currentLap !== lastLap) {
+                lastLap = player.currentLap;
                 lapTimes.push(timer.getElapsedTime());
 
                 if (player.currentLap === totalLaps) {
                     const placement = places.indexOf(player) + 1;
                     timer.setRunning(false);
-                    // Replace the placement stub when opponent cars are implemented.
-                    result = recordRaceResult(course.trackId, lapTimes, placement);
+                    result = aiPlayer ? new RaceResult(lapTimes.map(time => new LapResult(time, false)),
+                        lapTimes.reduce((total, time) => total + time, 0), false, placement)
+                        : recordRaceResult(course.trackId, lapTimes, placement);
                     finished = true;
+                    if (aiPlayer) aiPlayer.driver = undefined;
                     player.startAutoDrive(gates);
                     timer.destroy();
                     for (const lapTimer of lapTimeSprites) lapTimer.destroy();
@@ -186,16 +206,19 @@ namespace racing {
         try {
             control.runInBackground(() => {
                 for (let i = 3; i > 0; i--) {
+                    if (cancelled) return;
                     countdownSprite.setText(i.toString());
                     countdownSprite.x = screen.width / 2;
                     countdownSprite.y = screen.height / 2;
                     pause(1000);
                 }
+                if (cancelled) return;
                 countdownSprite.setText("GO");
                 countdownSprite.x = screen.width / 2;
                 countdownSprite.y = screen.height / 2;
                 timer.setRunning(true);
-                player.controlEnabled = true;
+                if (aiPlayer) aiPlayer.paused = false;
+                else player.controlEnabled = true;
                 for (const opponent of opponents) {
                     if (!opponent.driver) {
                         opponent.startAutoDrive(gates);
@@ -203,12 +226,17 @@ namespace racing {
                     opponent.paused = false;
                 }
                 pause(1000);
-                countdownSprite.destroy();
+                if (!cancelled) countdownSprite.destroy();
             });
 
-            pauseUntil(() => finished);
-            showRaceResults(result);
+            pauseUntil(() => finished || (aiPlayer && controller.B.isPressed()));
+            if (finished) showRaceResults(result);
+            else {
+                cancelled = true;
+                pauseUntilAllButtonsReleased();
+            }
         } finally {
+            cancelled = true;
             timer.destroy();
             for (const lapTimer of lapTimeSprites) lapTimer.destroy();
             minimapRenderable.destroy();

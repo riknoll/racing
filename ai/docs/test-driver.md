@@ -21,7 +21,7 @@ aiRacing.watchBotLap(0, racing.getCourses()[3]) // Watch Bot 1 on Monaco
 For a TypeScript-only single-lap lesson and attempt, teach the model first:
 
 ```typescript
-aiRacing.teachDriver()
+aiRacing.teachDriver(racing.TrainingTrack.TestTrack)
 aiRacing.testDriver()
 ```
 

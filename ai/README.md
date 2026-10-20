@@ -73,6 +73,10 @@ Run this command from the project root.
 For a standalone learner project, the lesson can also be started with just:
 
 ```typescript
-aiRacing.teachDriver()
+aiRacing.teachDriver(racing.TrainingTrack.TestTrack)
 aiRacing.testDriver()
 ```
+
+The teaching block's course dropdown defaults to Test Track and also offers all
+six race tracks. It always teaches one lap; the menu's three-lap Test Track
+default is unchanged.
