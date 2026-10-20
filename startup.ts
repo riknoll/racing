@@ -68,6 +68,10 @@ namespace racing {
     }
 
     function viewAI(): void {
+        if (!aiRacing.trainedBots().length) {
+            showTrainingRequired(true);
+            return;
+        }
         const slot = chooseMenu("View AI", aiRacing.botNames());
         if (slot < 0) return;
         const bot = aiRacing.botSlot(slot);

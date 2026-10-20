@@ -642,7 +642,7 @@ namespace racing {
         target.fillRect(left, top + 2, width, height - 4, color);
     }
 
-    export function showTrainingRequired(): void {
+    export function showTrainingRequired(fromMenu = false): void {
         const picture = image.create(screen.width, screen.height);
         picture.fill(12);
         drawRoundedBackground(picture, 3, 2, picture.width - 6, picture.height - 4, 9);
@@ -655,8 +655,8 @@ namespace racing {
         centeredText("TRAIN AI", 15, customFont.racing, 5);
         centeredText("You need to train an AI", 39, font, 1);
         centeredText("before watching it race.", 49, font, 1);
-        centeredText("Use a training block", 69, font, 1);
-        centeredText("before this race block.", 79, font, 1);
+        centeredText(fromMenu ? "Go back and select" : "Use a training block", 69, font, 1);
+        centeredText(fromMenu ? "Train AI first." : "before this race block.", 79, font, 1);
         const okLeft = Math.idiv(picture.width - 12 - fancyText.getTextWidth(font, "OK"), 2);
         picture.drawTransparentImage(drivingControls.a, okLeft, 103);
         fancyText.draw("OK", picture, okLeft + 12, 103, 0, 1, font);

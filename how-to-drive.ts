@@ -111,20 +111,65 @@ namespace racing {
         private arrived = false;
         private highlighted: TutorialButton[] = [];
         private buttons = [controller.A, controller.B, controller.up, controller.down, controller.left, controller.right];
-        private icons = [drivingControls.a, drivingControls.b, drivingControls.up,
-            drivingControls.down, drivingControls.left, drivingControls.right];
+        private icons = [drivingControls.a, drivingControls.b];
+        private dpad = image.create(25, 25);
         private normalIcons: Image[] = [];
         private pressedIcons: Image[] = [];
         private buttonPositions = [
-            new util.Point(46, screen.height - 26),
-            new util.Point(36, screen.height - 14),
-            new util.Point(10, screen.height - 28),
-            new util.Point(10, screen.height - 12),
-            new util.Point(2, screen.height - 20),
-            new util.Point(18, screen.height - 20)
+            new util.Point(44, screen.height - 25),
+            new util.Point(35, screen.height - 14),
+            new util.Point(11, screen.height - 27),
+            new util.Point(11, screen.height - 11),
+            new util.Point(3, screen.height - 19),
+            new util.Point(19, screen.height - 19)
         ];
 
         constructor() {
+            this.dpad.fillRect(9, 1, 7, 23, 12);
+            this.dpad.fillRect(1, 9, 23, 7, 12);
+            for (const edge of [1, 23]) {
+                this.dpad.setPixel(9, edge, 0);
+                this.dpad.setPixel(15, edge, 0);
+                this.dpad.setPixel(edge, 9, 0);
+                this.dpad.setPixel(edge, 15, 0);
+            }
+            for (let y = 0; y < this.dpad.height; y++) {
+                for (let x = 0; x < this.dpad.width; x++) {
+                    if (this.dpad.getPixel(x, y) !== 12) continue;
+                    if (!this.dpad.getPixel(x - 1, y)) this.dpad.setPixel(x - 1, y, 15);
+                    if (!this.dpad.getPixel(x + 1, y)) this.dpad.setPixel(x + 1, y, 15);
+                    if (!this.dpad.getPixel(x, y - 1)) this.dpad.setPixel(x, y - 1, 15);
+                    if (!this.dpad.getPixel(x, y + 1)) this.dpad.setPixel(x, y + 1, 15);
+                }
+            }
+            this.dpad.fillRect(11, 10, 3, 5, 11);
+            this.dpad.fillRect(10, 11, 5, 3, 11);
+            const up = img`
+                . c c c c c .
+                c c c b c c c
+                c c b b b c c
+                c b b b b b c
+                c c c c c c c
+                c c c c c c c
+                c c c c c c c
+            `;
+            const down = up.clone();
+            down.flipY();
+            const left = img`
+                . c c c c c c
+                c c c b c c c
+                c c b b c c c
+                c b b b c c c
+                c c b b c c c
+                c c c b c c c
+                . c c c c c c
+            `;
+            const right = left.clone();
+            right.flipX();
+            this.icons.push(up);
+            this.icons.push(down);
+            this.icons.push(left);
+            this.icons.push(right);
             for (let button = 0; button < this.icons.length; button++) {
                 this.normalIcons.push(this.createButtonImage(button, false));
                 this.pressedIcons.push(this.createButtonImage(button, true));
@@ -140,10 +185,11 @@ namespace racing {
                     if (pressed && button <= TutorialButton.B) {
                         if (color === 6 || color === 1) face.setPixel(x, y + 1, color === 6 ? 7 : 1);
                     } else {
-                        face.setPixel(x, y, pressed && color === 1 ? 3 : color);
+                        face.setPixel(x, y, pressed && color === 12 ? 3 : color);
                     }
                 }
             }
+            if (button > TutorialButton.B) return face;
             const outlined = image.create(icon.width + 2, icon.height + 2);
             for (let y = 0; y < face.height; y++) {
                 for (let x = 0; x < face.width; x++) {
@@ -338,6 +384,7 @@ namespace racing {
                 drawRoundedBackground(target, this.ok.left - 4, this.ok.top - 3,
                     this.ok.width + 8, this.ok.height + 6, 12);
             }
+            target.drawTransparentImage(this.dpad, 2, screen.height - 28);
             for (let button = 0; button < this.buttons.length; button++) {
                 const highlighted = this.car.controlEnabled ? this.buttons[button].isPressed()
                     : this.highlighted.indexOf(button) >= 0;

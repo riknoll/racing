@@ -24,22 +24,22 @@ namespace racing.drivingControls {
         . . 1 1 1 1 . .
         . 1 1 1 1 1 1 .
         1 1 1 1 1 1 1 1
-        1 1 1 1 1 1 1 1
-        . . 1 1 1 1 . .
-        . . 1 1 1 1 . .
-        . . 1 1 1 1 . .
+        . . . 1 1 . . .
+        . . . 1 1 . . .
+        . . . 1 1 . . .
+        . . . 1 1 . . .
     `;
     export const down = up.clone();
     down.flipY();
     export const left = img`
-        . . . 1 1 . . .
-        . . 1 1 1 . . .
-        . 1 1 1 1 1 1 1
+        . . . 1 . . . .
+        . . 1 1 . . . .
+        . 1 1 1 . . . .
         1 1 1 1 1 1 1 1
         1 1 1 1 1 1 1 1
-        . 1 1 1 1 1 1 1
-        . . 1 1 1 . . .
-        . . . 1 1 . . .
+        . 1 1 1 . . . .
+        . . 1 1 . . . .
+        . . . 1 . . . .
     `;
     export const right = left.clone();
     right.flipX();

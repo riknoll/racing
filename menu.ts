@@ -36,7 +36,7 @@ namespace racing {
             picture.fill(15);
             scene.setBackgroundImage(picture);
             textSprites.push(createMenuText(title.toUpperCase(), 1, customFont.racing, 1));
-            textSprites.push(createMenuHelp(picture, true, allowBack));
+            createMenuHelp(picture, true, allowBack);
 
             const previewFrames = courses.map(course => trackPreviewAnimations.forCourse(course));
             const previewItems = courses.map((course, index) =>
@@ -72,7 +72,7 @@ namespace racing {
             miniMenu.setDimensions(nameMenu, TRACK_MENU_WIDTH, customFont.racing.lineHeight + 2);
             previewMenu.left = nameMenu.left = (screen.width - TRACK_MENU_WIDTH) / 2;
             previewMenu.top = 1 + customFont.racing.lineHeight;
-            nameMenu.top = previewMenu.bottom;
+            nameMenu.top = previewMenu.bottom - 3;
             for (const course of courses) {
                 if (course.trackId === undefined || !hasStorageKey(course.trackId, StorageKey.BestLap)) {
                     bestLapTimers.push(undefined);
@@ -212,7 +212,7 @@ namespace racing {
         const cellWidth = valueWidth + 4;
         const cellHeight = valueHeight + 4;
         const rowHeight = Math.max(20, cellHeight + 2);
-        const visibleRows = Math.floor((screen.height - 7 - menuTop) / rowHeight);
+        const visibleRows = Math.floor((screen.height - 10 - menuTop) / rowHeight);
         if (!visibleRows || cellWidth > menuWidth / 2) throw "Option values are too large for the menu";
         const valueMenus: miniMenu.MenuSprite[] = [];
         const textSprites: fancyText.TextSprite[] = [];
@@ -226,7 +226,7 @@ namespace racing {
             picture.fill(15);
             scene.setBackgroundImage(picture);
             textSprites.push(createMenuText(title.toUpperCase(), 1, customFont.racing, 1));
-            textSprites.push(createMenuHelp(picture, false, allowBack, true));
+            createMenuHelp(picture, false, allowBack, true);
 
             const rows: miniMenu.MenuItem[] = options.map(option =>
                 new OptionMenuItem(option.name.toUpperCase(), undefined, menuWidth, rowHeight));
@@ -381,7 +381,7 @@ namespace racing {
             } else {
                 scene.setBackgroundImage(picture);
             }
-            textSprites.push(createMenuHelp(picture, false, allowBack));
+            createMenuHelp(picture, false, allowBack);
 
             menu = new miniMenu.MenuSprite();
             menu.setMenuItems(setupBackground ? createMainMenuItems(choices, icons)
@@ -414,7 +414,7 @@ namespace racing {
             miniMenu.setDimensions(menu, setupBackground ? screen.width : screen.width - 4,
                 setupBackground ? 88 : icons ? 66 : 78);
             menu.left = (screen.width - menu.width) / 2;
-            menu.top = setupBackground ? 24 : icons ? 42 : 31;
+            menu.top = setupBackground ? 22 : icons ? 42 : 31;
             for (let i = 0; i < initialSelection; i++) {
                 miniMenu.moveSelection(menu, miniMenu.MoveDirection.Down);
             }
@@ -544,40 +544,41 @@ namespace racing {
         }
     }
 
-    function createMenuArrows(horizontal: boolean): Image {
-        return horizontal ? img`
-            . . 1 . . . . . 1 . .
-            . 1 1 . . . . . 1 1 .
-            1 1 1 1 1 . 1 1 1 1 1
-            . 1 1 . . . . . 1 1 .
-            . . 1 . . . . . 1 . .
-        ` : img`
-            . . 1 . . . . . 1 . .
-            . 1 1 1 . . . . 1 . .
-            1 1 1 1 1 . 1 1 1 1 1
-            . . 1 . . . . 1 1 1 .
-            . . 1 . . . . . 1 . .
-        `;
-    }
-
-    function createMenuHelp(picture: Image, horizontal: boolean, allowBack: boolean, options = false): fancyText.TextSprite {
-        let arrows = createMenuArrows(horizontal);
+    function createMenuHelp(picture: Image, horizontal: boolean, allowBack: boolean, options = false): void {
+        const arrows = horizontal ? [drivingControls.left, drivingControls.right]
+            : [drivingControls.up, drivingControls.down];
         if (options) {
-            const both = image.create(arrows.width * 2 + 1, arrows.height);
-            both.drawImage(arrows, 0, 0);
-            both.drawImage(createMenuArrows(true), arrows.width + 1, 0);
-            arrows = both;
+            arrows.push(drivingControls.left);
+            arrows.push(drivingControls.right);
+        }
+        const controls = [arrows, [drivingControls.a]];
+        const labels = [options ? "Change" : "Move", options ? "Start" : "Select"];
+        if (allowBack) {
+            controls.push([drivingControls.b]);
+            labels.push("Back");
+        }
+        const font = fancyText.geometric_sans_7;
+        let width = (controls.length - 1) * 3;
+        let height = drivingControls.a.height;
+        for (let i = 0; i < controls.length; i++) {
+            for (const icon of controls[i]) {
+                width += icon.width + 1;
+                height = Math.max(height, icon.height);
+            }
+            width += 2 + fancyText.getTextWidth(font, labels[i]);
         }
         const bottom = picture.height - 1;
-        const height = Math.max(arrows.height, fancyText.tiny_4.lineHeight);
         picture.fillRect(0, bottom - height - 1, picture.width, height + 2, 15);
-        const action = options ? "CHANGE A START" : "MOVE A SELECT";
-        const text = createMenuText(action + (allowBack ? " B BACK" : ""),
-            bottom - fancyText.tiny_4.lineHeight, fancyText.tiny_4, 1);
-        const left = Math.floor((picture.width - arrows.width - 3 - text.width) / 2);
-        picture.drawTransparentImage(arrows, left, bottom - arrows.height);
-        text.left = left + arrows.width + 3;
-        return text;
+        let left = Math.floor((picture.width - width) / 2);
+        for (let i = 0; i < controls.length; i++) {
+            for (const icon of controls[i]) {
+                picture.drawTransparentImage(icon, left, bottom - icon.height);
+                left += icon.width + 1;
+            }
+            fancyText.draw(labels[i], picture, left + 2,
+                bottom - height + Math.idiv(height - font.lineHeight, 2), 0, 1, font);
+            left += 2 + fancyText.getTextWidth(font, labels[i]) + 3;
+        }
     }
 
     function createMenuText(text: string, y: number, font: fancyText.BaseFont, color: number): fancyText.TextSprite {
