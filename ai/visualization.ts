@@ -18,7 +18,9 @@ namespace aiRacing {
         readonly picture = image.create(160, 120);
         private view = MemoryView.Steering;
 
-        constructor(private driver: Driver) {}
+        constructor(private driver: Driver, private confirmLabel?: string) {
+            if (this.confirmLabel === undefined) this.confirmLabel = "Choose Track";
+        }
 
         draw(animate: boolean): void {
             this.picture.fill(15);
@@ -107,7 +109,7 @@ namespace aiRacing {
             const a = racing.drivingControls.a;
             const pageWidth = fancyText.getTextWidth(font, "Page");
             const width = left.width + 2 + right.width + 4 + pageWidth
-                + 12 + a.width + 4 + fancyText.getTextWidth(font, "Choose Track");
+                + 12 + a.width + 4 + fancyText.getTextWidth(font, this.confirmLabel);
             let x = Math.idiv(160 - width, 2);
             this.picture.drawTransparentImage(left, x, 111);
             x += left.width + 2;
@@ -116,7 +118,7 @@ namespace aiRacing {
             fancyText.draw("Page", this.picture, x, 111, 0, 1, font);
             x += pageWidth + 12;
             this.picture.drawTransparentImage(a, x, 111);
-            fancyText.draw("Choose Track", this.picture, x + a.width + 4, 111, 0, 1, font);
+            fancyText.draw(this.confirmLabel, this.picture, x + a.width + 4, 111, 0, 1, font);
         }
 
         private axisLabel(text: string, x: number, y: number, font: fancyText.BaseFont): void {
@@ -132,7 +134,15 @@ namespace aiRacing {
 
     /** Return false when the player backs out without continuing. */
     export function showTrainingSummary(driver: Driver, _continueText?: string, _extraInfo?: string): boolean {
-        const chart = new MemoryChart(driver);
+        return showMemoryChart(driver, "Choose Track");
+    }
+
+    export function showMemories(driver: Driver): void {
+        showMemoryChart(driver, "Done");
+    }
+
+    function showMemoryChart(driver: Driver, confirmLabel: string): boolean {
+        const chart = new MemoryChart(driver, confirmLabel);
         let confirmed = false;
         game.pushScene();
         try {

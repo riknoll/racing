@@ -1,4 +1,26 @@
 namespace racing {
+    /** Keep the selected car's look-ahead target bound to its own scene. */
+    export function followRaceCar(car: Car): () => void {
+        const currentScene = game.currentScene();
+        const eventContext = currentScene.eventContext;
+        const camera = currentScene.camera;
+        const target = new Sprite(image.create(2, 2));
+        target.setFlag(SpriteFlag.Ghost, true);
+        target.setFlag(SpriteFlag.Invisible, true);
+        const update = () => {
+            target.setPosition(car.x + 30 * Math.cos(car.heading), car.y + 30 * Math.sin(car.heading));
+            camera.sprite = target;
+        };
+        update();
+        scene.cameraFollowSprite(target);
+        const handler = eventContext.registerFrameHandler(scene.PRE_RENDER_UPDATE_PRIORITY - 1, update);
+        return () => {
+            eventContext.unregisterFrameHandler(handler);
+            if (camera.sprite === target) camera.sprite = undefined;
+            target.destroy();
+        };
+    }
+
     /** Use the upstream instruments for human races, training, and AI watches. */
     export class DrivingDisplay {
         private visible = true;
@@ -10,6 +32,7 @@ namespace racing {
         private completedLaps = 0;
         private lapStart = 0;
         private minimapOffset: util.Point;
+        private stopFollowing: () => void;
 
         constructor(private gates: Gate[], private car: Car, private laps: number) {
             if (!gates.length || laps < 1 || laps > 4 || laps !== Math.floor(laps)) {
@@ -32,6 +55,7 @@ namespace racing {
                 racing.drawLapIndicator(135, 0, Math.min(car.currentLap, laps - 1), laps);
                 racing.drawSpeedometer(19, 20, 99, car.speed, car.stats.topSpeed);
             }, () => this.visible);
+            this.stopFollowing = followRaceCar(car);
         }
 
         update(elapsedMillis: number, completedLaps: number, finished: boolean): void {
@@ -59,6 +83,7 @@ namespace racing {
         }
 
         destroy(): void {
+            this.stopFollowing();
             this.minimap.destroy();
             this.instruments.destroy();
             this.finishLine.destroy();

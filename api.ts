@@ -57,19 +57,34 @@ namespace racing {
         aiRacing.loadBots();
         let bot: aiRacing.BotSlot;
         if (driver === RaceDriver.AI) {
-            const trained = aiRacing.trainedBots();
-            if (!trained.length) {
-                showTrainingRequired();
-                return;
-            }
-            if (trained.length === 1) bot = trained[0];
-            else {
-                const names = aiRacing.botNames();
-                const selected = chooseMenu("SELECT AI", trained.map(slot => names[slot.index]), false);
-                bot = trained[selected];
-            }
+            bot = chooseTrainedBot("watching it race");
+            if (!bot) return;
         }
         startRace(course, laps, 3, RaceSpeed.Fast, bot);
+    }
+
+    /**
+     * View a trained AI's saved driving examples without recording another lap.
+     */
+    //% blockId=racing_view_memories block="view memories"
+    //% help=github:this/docs/view-memories
+    //% group="Game" weight=75
+    export function viewMemories(): void {
+        aiRacing.loadBots();
+        const bot = chooseTrainedBot("viewing memories");
+        if (bot) aiRacing.showMemories(bot.driver);
+    }
+
+    function chooseTrainedBot(action: string): aiRacing.BotSlot {
+        const trained = aiRacing.trainedBots();
+        if (!trained.length) {
+            showTrainingRequired(false, action);
+            return undefined;
+        }
+        if (trained.length === 1) return trained[0];
+        const names = aiRacing.botNames();
+        const selected = chooseMenu("SELECT AI", trained.map(slot => names[slot.index]), false);
+        return trained[selected];
     }
 
     /**

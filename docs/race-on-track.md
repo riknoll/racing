@@ -20,6 +20,9 @@ racing.raceOnTrack(racing.Track.Monaco, 2, racing.RaceDriver.Player)
 
 Choose **AI** to let a trained AI drive the followed car for the selected number
 of laps, with the same opponents, countdown, instruments, and results screen.
+The camera is bound to that AI car before the countdown, including when this
+block is the first action after a simulator restart. It keeps the normal
+30-pixel look-ahead and Arcade's map boundaries.
 If only one AI is trained, it starts automatically. If more than one is trained,
 a menu lists only the trained AIs so you can choose one. Use Up/Down to select
 an AI and A to start the race; B does not cancel this block's picker.
