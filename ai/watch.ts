@@ -81,8 +81,6 @@ namespace aiRacing {
             game.onUpdate(() => {
                 watch.update(controller.B.isPressed());
                 display.update(watch.car.elapsedMillis, watch.car.currentLap, watch.ended);
-                scene.centerCameraAt(watch.car.x + 30 * Math.cos(watch.car.heading),
-                    watch.car.y + 30 * Math.sin(watch.car.heading));
             });
             while (!watch.ended) pause(20);
             showingResults = true;

@@ -155,8 +155,6 @@ namespace aiRacing {
             if (drivingDisplay) {
                 drivingDisplay.update(watchedCar.elapsedMillis, watchedCar.currentLap, watchedCar.paused && status !== "READY");
             }
-            scene.centerCameraAt(watchedCar.x + 30 * Math.cos(watchedCar.heading),
-                watchedCar.y + 30 * Math.sin(watchedCar.heading));
         });
         const startFont = fancyText.geometric_sans_6;
         const startPrompt = image.create(12 + fancyText.getTextWidth(startFont, "Start teaching"), 11);
