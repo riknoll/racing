@@ -42,7 +42,7 @@ namespace aiRacing {
     }
 
     function checkLesson(courseIndex: number, teachingMillis: number, offRoadMillis: number): void {
-        requireInteger(courseIndex, 0, 6, "Bot course");
+        requireInteger(courseIndex, 0, racing.TrainingTrack.Sydney, "Bot course");
         requireInteger(teachingMillis, 0, 0xffffffff, "Teaching milliseconds");
         requireInteger(offRoadMillis, 0, teachingMillis, "Off-road milliseconds");
     }

@@ -12,6 +12,7 @@ namespace aiRacing {
         readonly gates: racing.Gate[] = [];
         readonly centers: util.Point[] = [];
         private finishGateOffset: number;
+        private finishAtFirstVertex: boolean;
 
         constructor(gates: Buffer, centers: Buffer, public readonly roadWidth: number) {
             if (gates.length < 48 || gates.length % 16 || centers.length < 12 || centers.length % 4 || roadWidth <= 0) {
@@ -25,9 +26,19 @@ namespace aiRacing {
             if (this.finishGateOffset !== 0 && this.finishGateOffset !== 1) {
                 throw "Expected two gates per turn with an optional finish gate";
             }
+            const finish = racing.gateCenter(this.gates[0]);
+            this.finishAtFirstVertex = this.finishGateOffset === 1
+                && Math.abs(finish.x - this.centers[0].x) <= 1
+                && Math.abs(finish.y - this.centers[0].y) <= 1;
             for (let i = 0; i < this.centers.length; i++) {
                 if (!this.segmentLength(i)) throw "A racing road segment has zero length";
             }
+        }
+
+        get startHeading(): number {
+            const start = this.centers[this.centers.length - 1];
+            const end = this.centers[0];
+            return Math.atan2(end.y - start.y, end.x - start.x);
         }
 
         reset(car: LearningCar): void {
@@ -35,9 +46,7 @@ namespace aiRacing {
             car.x = (gate.start.x + gate.end.x) / 2;
             car.y = (gate.start.y + gate.end.y) / 2;
             // The first gate precedes turn zero, on the final road segment.
-            const start = this.centers[this.centers.length - 1];
-            const end = this.centers[0];
-            car.heading = Math.atan2(end.y - start.y, end.x - start.x);
+            car.heading = this.startHeading;
             car.speed = 0;
             car.acceleration = 0;
             car.vx = 0;
@@ -162,6 +171,7 @@ namespace aiRacing {
             // the Test Track uses only turn pairs and starts at the first one.
             const paired = index - this.finishGateOffset;
             if (paired < 0) return this.centers.length - 1;
+            if (this.finishAtFirstVertex) return Math.floor(paired / 2);
             const turn = Math.floor(paired / 2);
             return (turn + (paired % 2 ? 0 : -1) + this.centers.length) % this.centers.length;
         }

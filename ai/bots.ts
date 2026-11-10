@@ -31,16 +31,29 @@ namespace aiRacing {
         return getBotSlots().filter(bot => bot.driver.count() >= MIN_EXAMPLES);
     }
 
+    export function botCourse(courseIndex: number): racing.Course {
+        // Saved course 6 remains Test Track; surviving courses retain their IDs.
+        const course = courseIndex === 6 ? racing.getTrainingCourses()[0]
+            : racing.getCourses().find(course => course.trackId + 1 === courseIndex);
+        if (!course) throw "The bot's training track is unavailable";
+        return course;
+    }
+
+    function botCourseName(courseIndex: number): string {
+        if (courseIndex === 6) return "Test Track";
+        const course = racing.getCourses().find(course => course.trackId + 1 === courseIndex);
+        return course ? course.name : "Removed track";
+    }
+
     export function botNames(): string[] {
-        const courses = racing.getCourses();
         return getBotSlots().map(bot => "Bot " + (bot.index + 1) + ": "
-            + (bot.courseIndex < 0 ? "Empty" : bot.courseIndex === 6 ? "Test Track" : courses[bot.courseIndex].name)
+            + (bot.courseIndex < 0 ? "Empty" : botCourseName(bot.courseIndex))
             + (bot.driver.count() >= MIN_EXAMPLES && !bot.saved ? "*" : ""));
     }
 
     export function botInfo(index: number): string {
         const bot = botSlot(index);
-        const name = bot.courseIndex < 0 ? "No training yet" : bot.courseIndex === 6 ? "Test Track" : racing.getCourses()[bot.courseIndex].name;
+        const name = bot.courseIndex < 0 ? "No training yet" : botCourseName(bot.courseIndex);
         return "Bot " + (index + 1) + ": " + name
             + (bot.saved ? "\nSaved buffer: " + bot.byteLength + " bytes" : "\nNot saved; available this session only.")
             + "\nSettings: " + getStorageUsage() + "/" + SETTINGS_QUOTA + " encoded bytes."

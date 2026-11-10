@@ -1,11 +1,12 @@
 namespace racing {
     export enum Track {
-        Netherlands,
-        USA,
-        Australia,
-        GreatBritain,
-        Monaco,
-        Italy
+        Monclava = 7,
+        Strasbourg,
+        Vancouver,
+        Hanover,
+        Birmingham,
+        Seattle,
+        Sydney
     }
 
     export enum RaceSpeed {
@@ -66,11 +67,7 @@ namespace racing {
         const allCars = [player].concat(opponents);
 
         const firstGate = gateCenter(gates[0]);
-        const secondGate = gateCenter(gates[1]);
-        const startingAngle = Math.atan2(
-            secondGate.y - firstGate.y,
-            secondGate.x - firstGate.x
-        );
+        const startingAngle = track.startHeading;
 
         const orthogonalAngle = startingAngle + Math.PI / 2;
         const spacing = 30;
@@ -268,8 +265,7 @@ namespace racing {
         const cars: aiRacing.LearningCar[] = [];
         const carEffects: racing.effects.CarEffects[] = [];
         const firstGate = gateCenter(track.gates[0]);
-        const nextGate = gateCenter(track.gates[1]);
-        const heading = Math.atan2(nextGate.y - firstGate.y, nextGate.x - firstGate.x);
+        const heading = track.startHeading;
         for (let i = 0; i < 3; i++) {
             const stats = new RacerStats(100 - i * 5, 100 - i * 10, i === 0 ? 85 : 100, 80 + i * 10, 100, 100);
             const car = new aiRacing.LearningCar(stats, getCarFrames(i), track);

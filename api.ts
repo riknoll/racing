@@ -37,21 +37,13 @@ namespace racing {
     //% blockId=racing_race_on_track block="race on $track for $laps laps as $driver"
     //% help=github:this/docs/race-on-track
     //% group="Game" weight=90
-    //% track.defl=racing.Track.Monaco
+    //% track.defl=racing.Track.Monclava
     //% laps.min=1 laps.max=4 laps.defl=1
     //% driver.defl=racing.RaceDriver.Player
     export function raceOnTrack(track: Track, laps: number = 1, driver: RaceDriver = RaceDriver.Player): void {
         const courses = getCourses();
-        let course: Course;
-        switch (track) {
-            case Track.Netherlands: course = courses[4]; break;
-            case Track.USA: course = courses[5]; break;
-            case Track.Australia: course = courses[0]; break;
-            case Track.GreatBritain: course = courses[1]; break;
-            case Track.Monaco: course = courses[3]; break;
-            case Track.Italy: course = courses[2]; break;
-            default: throw "Choose a valid racing track";
-        }
+        const course = courses.find(course => course.trackId === track);
+        if (!course) throw "Choose a valid racing track";
         if (driver !== RaceDriver.Player && driver !== RaceDriver.AI) throw "Choose a valid race driver";
         laps = Math.max(1, Math.min(4, laps)) | 0;
         aiRacing.loadBots();

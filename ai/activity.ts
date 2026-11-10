@@ -25,17 +25,20 @@ namespace aiRacing {
     //% blockNamespace=racing group="Game" weight=80
     //% track.defl=racing.TrainingTrack.TestTrack
     export function teachDriver(track: racing.TrainingTrack = racing.TrainingTrack.TestTrack): void {
-        const courses = racing.getTrainingCourses();
-        if (track < 0 || track >= courses.length || track !== Math.floor(track)) throw "Choose a valid training track";
-        teachLesson("race", courses[track], selectedBot, 1);
+        if (track !== racing.TrainingTrack.TestTrack
+            && !racing.getCourses().some(course => course.trackId + 1 === track)) throw "Choose a valid training track";
+        const course = track === racing.TrainingTrack.TestTrack ? racing.getTrainingCourses()[0] : botCourse(track);
+        teachLesson("race", course, selectedBot, 1);
     }
 
     function teachLesson(continueText: string, course: racing.Course, slot: number, laps: number): void {
         if (laps < 1 || laps > 4 || laps !== Math.floor(laps)) throw "Choose one to four training laps";
-        let courseIndex = racing.getCourses().indexOf(course);
-        if (courseIndex < 0) {
+        let courseIndex: number;
+        if (racing.getCourses().indexOf(course) < 0) {
             if (course !== racing.getTrainingCourses()[0]) throw "Choose a valid training track";
             courseIndex = 6;
+        } else {
+            courseIndex = course.trackId + 1;
         }
         trainingLaps = laps;
         initialize(course);

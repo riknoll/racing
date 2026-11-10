@@ -57,10 +57,9 @@ lap timer, lap-time panels, and forward-looking camera. AI-specific information
 does not replace these instruments or add a full-width driving header.
 
 The extension includes the ready-to-use [race geometry](geometry.g.ts),
-[Test Track assets](training-track.g.ts), and original race tilemaps and
-checkpoints. The added AI generator scripts and their source SVG are not included
-or needed to build the extension. The original track generator and SVG sources
-remain unchanged.
+[Test Track assets](training-track.g.ts), and generated race tilemaps and
+checkpoints. JSON definitions in `tracks/` are the source for race geometry and
+editable tracks; the generator scripts are not needed to build the extension.
 
 ## Building
 

@@ -1,19 +1,19 @@
 # Race on a track
 
-Start a single race directly, without opening the game menu. Choose Australia, Great Britain,
-Italy, Monaco, Netherlands, or USA, **1-4 laps**, and **player** or **AI** in the
+Start a single race directly, without opening the game menu. Choose Monclava,
+Strasbourg, Vancouver, Hanover, Birmingham, Seattle, or Sydney, **1-4 laps**, and **player** or **AI** in the
 driver dropdown. The default is **player**, so existing programs keep their
 normal controls. This block keeps three
 opponents and Fast speed; the game menu offers configurable race options.
 
 ```sig
-racing.raceOnTrack(racing.Track.Monaco, 1, racing.RaceDriver.Player)
+racing.raceOnTrack(racing.Track.Monclava, 1, racing.RaceDriver.Player)
 ```
 
 ## Example
 
 ```blocks
-racing.raceOnTrack(racing.Track.Monaco, 2, racing.RaceDriver.Player)
+racing.raceOnTrack(racing.Track.Monclava, 2, racing.RaceDriver.Player)
 ```
 
 ## Watch an AI race
@@ -27,7 +27,7 @@ The game menus still support B to go back.
 Press B during an AI race to return, even if the AI gets stuck.
 
 ```blocks
-racing.raceOnTrack(racing.Track.Monaco, 2, racing.RaceDriver.AI)
+racing.raceOnTrack(racing.Track.Monclava, 2, racing.RaceDriver.AI)
 ```
 
 If no AI is trained, a styled **TRAIN AI** message explains that you must use a

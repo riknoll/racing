@@ -51,9 +51,7 @@ namespace aiRacing {
             if (racing.getTrainingCourses().indexOf(selected) < 0) throw "Choose a valid watch track";
             return selected;
         }
-        const course = bot.courseIndex === 6 ? racing.getTrainingCourses()[0] : racing.getCourses()[bot.courseIndex];
-        if (!course) throw "The bot's training track is unavailable";
-        return course;
+        return botCourse(bot.courseIndex);
     }
 
     /** Watch the training track unless another registered course is selected. */

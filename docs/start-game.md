@@ -159,7 +159,7 @@ const values = racing.chooseOptionsMenu("OPTIONS", [
 ```
 
 Scripted menu choices use `OPTION: VALUE` entries followed by `Start`, for
-example `["Race", "Monaco", "LAPS: B", "OPPONENTS: B", "SPEED: Med", "Start", "Continue"]`.
+example `["Race", "Monclava", "LAPS: B", "OPPONENTS: B", "SPEED: Med", "Start", "Continue"]`.
 The results screen accepts `Continue` after its animation finishes.
 Options not mentioned keep their defaults; `Back` cancels and `manual` switches
 to interactive selection with any scripted changes retained.
@@ -173,18 +173,18 @@ Omitting it retains Fast.
 Each `Course` has a fixed `backgroundTileset`, set as its final constructor
 argument in `courses.ts`. Choose a named `racing.BackgroundTileset`: `Grass`,
 `DarkGrass`, `DryGrass`, `Stone`, `DarkStone`, `Sand`, or `Checkerboard`.
-For example, the Australia entry inside the `racing` namespace uses:
+For example, the Birmingham entry inside the `racing` namespace uses:
 
 ```typescript
 new Course(
-    Track.Australia, "Australia", tilemap`australia`,
-    trackWaypoints.australia, trackCenterlines.australia, trackRoadWidths.australia,
-    [14, 4, 5], 2, PreviewScrollDirection.N, BackgroundTileset.Sand
+    Track.Birmingham, "Birmingham", tilemap`birmingham`,
+    trackWaypoints.birmingham, trackCenterlines.birmingham, trackRoadWidths.birmingham,
+    [6, 7, 9], 14, PreviewScrollDirection.E, BackgroundTileset.Stone
 )
 ```
 
-Initial assignments are Australia **Sand**, Great Britain **DarkGrass**,
-Italy **Grass**, Monaco **Stone**, Netherlands **Grass**, USA **DryGrass**,
+Initial assignments are Monclava **DryGrass**, Strasbourg **Grass**,
+Vancouver **DarkGrass**, Hanover **Grass**, Birmingham **Stone**,
 and Test Track **Checkerboard**. Races, the main-menu demonstration, training,
 and watching a bot all use the selected course's tileset. Tile placement within
 that tileset is still randomized; the tileset itself is no longer random.
@@ -260,8 +260,8 @@ Unsupported constructor expressions or invalid settings stop generation with an 
 Each course's `patternScrollDirection` selects a
 `racing.PreviewScrollDirection`: `N`, `E`, `S`, `W`, `NE`, `NW`, `SE`, or `SW`.
 It defaults to `N`; the optional `backgroundTileset` argument follows it.
-Built-in directions are Australia N, Great Britain E, Italy S, Monaco W,
-Netherlands S, USA W, and Test Track SW.
+Built-in directions are Monclava E, Strasbourg NE, Vancouver S, Hanover S,
+Birmingham E, and Test Track SW.
 
 After changing settings, geometry, patterns, or the renderer, regenerate and
 commit both generated files:

@@ -13,13 +13,14 @@ namespace racing {
             const icons = [racing.getPlayerCarFrames()[1], racing.getCarFrames(1)[1],
                 memoryMenuIcon(), racing.getPlayerCarFrames()[0]];
             while (true) {
-                const selected = chooseMenu("RACING", ["Race", "Train AI", "View AI", "TUTORIAL"], false, icons, 0,
+                const selected = chooseMenu("RACING", ["Race", "Train AI", "View AI", "TUTORIAL", "Track Editor"], false, icons, 0,
                     startMenuRaceBackground);
                 if (selected < 0) break;
                 if (selected === 0) chooseRace();
                 else if (selected === 1) chooseTraining();
                 else if (selected === 2) viewAI();
-                else howToDrive();
+                else if (selected === 3) howToDrive();
+                else editTrack();
                 releaseMenuButtons();
             }
         } finally {

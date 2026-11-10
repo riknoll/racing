@@ -2,13 +2,13 @@ namespace racing {
     export enum TrainingTrack {
         //% block="Test Track"
         TestTrack,
-        Australia,
-        //% block="Great Britain"
-        GreatBritain,
-        Italy,
-        Monaco,
-        Netherlands,
-        USA
+        Monclava = 8,
+        Strasbourg,
+        Vancouver,
+        Hanover,
+        Birmingham,
+        Seattle,
+        Sydney
     }
 
     export enum PreviewScrollDirection {
@@ -56,76 +56,88 @@ namespace racing {
         if (!courses) {
             courses = [
                 new Course(
-                    Track.Australia,
-                    "Australia",
-                    tilemap`australia`,
-                    trackWaypoints.australia,
-                    trackCenterlines.australia,
-                    trackRoadWidths.australia,
+                    Track.Birmingham,
+                    "Birmingham",
+                    tilemap`birmingham`,
+                    trackWaypoints.birmingham,
+                    trackCenterlines.birmingham,
+                    trackRoadWidths.birmingham,
+                    [6, 7, 9],
+                    14,
+                    PreviewScrollDirection.E,
+                    BackgroundTileset.Stone
+                ),
+                new Course(
+                    Track.Vancouver,
+                    "Vancouver",
+                    tilemap`vancouver`,
+                    trackWaypoints.vancouver,
+                    trackCenterlines.vancouver,
+                    trackRoadWidths.vancouver,
+                    [8, 6, 9],
+                    9,
+                    PreviewScrollDirection.S,
+                    BackgroundTileset.DarkGrass
+                ),
+                new Course(
+                    Track.Sydney,
+                    "Sydney",
+                    tilemap`sydney`,
+                    trackWaypoints.sydney,
+                    trackCenterlines.sydney,
+                    trackRoadWidths.sydney,
                     [14, 4, 5],
                     2,
                     PreviewScrollDirection.N,
                     BackgroundTileset.Sand
                 ),
                 new Course(
-                    Track.GreatBritain,
-                    "Great Britain",
-                    tilemap`greatbritain`,
-                    trackWaypoints.greatbritain,
-                    trackCenterlines.greatbritain,
-                    trackRoadWidths.greatbritain,
+                    Track.Strasbourg,
+                    "Strasbourg",
+                    tilemap`strasbourg`,
+                    trackWaypoints.strasbourg,
+                    trackCenterlines.strasbourg,
+                    trackRoadWidths.strasbourg,
+                    [4, 5, 1],
+                    3,
+                    PreviewScrollDirection.NE,
+                    BackgroundTileset.Grass
+                ),
+                new Course(
+                    Track.Monclava,
+                    "Monclava",
+                    tilemap`monclava`,
+                    trackWaypoints.monclava,
+                    trackCenterlines.monclava,
+                    trackRoadWidths.monclava,
+                    [14, 2, 3],
+                    10,
+                    PreviewScrollDirection.E,
+                    BackgroundTileset.DryGrass
+                ),
+                new Course(
+                    Track.Hanover,
+                    "Hanover",
+                    tilemap`hanover`,
+                    trackWaypoints.hanover,
+                    trackCenterlines.hanover,
+                    trackRoadWidths.hanover,
+                    [15, 10, 3],
+                    4,
+                    PreviewScrollDirection.S,
+                    BackgroundTileset.Grass
+                ),
+                new Course(
+                    Track.Seattle,
+                    "Seattle",
+                    tilemap`seattle`,
+                    trackWaypoints.seattle,
+                    trackCenterlines.seattle,
+                    trackRoadWidths.seattle,
                     [8, 6, 9],
                     4,
                     PreviewScrollDirection.E,
                     BackgroundTileset.DarkGrass
-                ),
-                new Course(
-                    Track.Italy,
-                    "Italy",
-                    tilemap`italy`,
-                    trackWaypoints.italy,
-                    trackCenterlines.italy,
-                    trackRoadWidths.italy,
-                    [4, 5, 1],
-                    3,
-                    PreviewScrollDirection.S,
-                    BackgroundTileset.Grass
-                ),
-                new Course(
-                    Track.Monaco,
-                    "Monaco",
-                    tilemap`monaco`,
-                    trackWaypoints.monaco,
-                    trackCenterlines.monaco,
-                    trackRoadWidths.monaco,
-                    [6, 7, 9],
-                    14,
-                    PreviewScrollDirection.W,
-                    BackgroundTileset.Stone
-                ),
-                new Course(
-                    Track.Netherlands,
-                    "Netherlands",
-                    tilemap`netherlands`,
-                    trackWaypoints.netherlands,
-                    trackCenterlines.netherlands,
-                    trackRoadWidths.netherlands,
-                    [8, 6, 9],
-                    9,
-                    PreviewScrollDirection.S,
-                    BackgroundTileset.Grass
-                ),
-                new Course(
-                    Track.USA,
-                    "USA",
-                    tilemap`usa`,
-                    trackWaypoints.usa,
-                    trackCenterlines.usa,
-                    trackRoadWidths.usa,
-                    [14, 2, 3],
-                    10,
-                    PreviewScrollDirection.W,
-                    BackgroundTileset.DryGrass
                 )
             ];
         }

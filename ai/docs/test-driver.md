@@ -17,7 +17,7 @@ metadata. A model may struggle on an unfamiliar course.
 From TypeScript, an optional course chooses the watch track:
 
 ```typescript
-aiRacing.watchBotLap(0, racing.getCourses()[3]) // Watch Bot 1 on Monaco
+aiRacing.watchBotLap(0, racing.getCourses()[0]) // Watch Bot 1 on Monclava
 ```
 
 For a TypeScript-only single-lap lesson and attempt, teach the model first:

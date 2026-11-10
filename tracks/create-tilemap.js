@@ -2,19 +2,22 @@
 const fs = require("node:fs")
 const path = require("node:path")
 
-const usage = `Usage: node tracks/create-tilemap.js <track.svg> [--size 200] [--width 4] [--simplify 2] [--angles 32] [--tileset detailed|compact] [--grass-color 0] [--road-color 11] [--outline-color 2] [--output track.ts]
-       node tracks/create-tilemap.js --batch [--size 200] [--width 4] [--simplify 2] [--tileset compact] [--grass-color 0] [--road-color 11] [--outline-color 2] [--output directory]
+const usage = `Usage: node tracks/create-tilemap.js <track.json> [--size 200] [--width 4] [--tileset detailed|compact] [--grass-color 0] [--road-color 11] [--outline-color 2] [--output track.ts]
+       node tracks/create-tilemap.js --batch [--size 200] [--width 4] [--tileset compact] [--grass-color 0] [--road-color 11] [--outline-color 2] [--output directory]
 
 Writes a standalone MakeCode Arcade TypeScript tilemap (16-pixel tiles).
---batch reads every SVG in tracks/ and writes tilemap.g.ts and tilemap.g.jres
+--batch reads track JSON files in tracks/ and writes tilemap.g.ts, tilemap.g.jres,
+ai/geometry.g.ts, and track-editor-tracks.g.ts
 to the project root (or --output directory), sharing tile artwork with a palette per map.
+Editor JSON is {"version":1,"points":[[x,y],...]}, with integer coordinates from 0 to 20.
+It must have at least three nodes, no crossings or overlapping segments, and only
+horizontal, vertical, 1:1, 1:2, or 2:1 slopes. The loop closes automatically;
+the first point is the finish and node order is the travel direction.
+Editor geometry is scaled to --size without repositioning nodes.
 Batch mode defaults to the compact tileset and includes per-track road gates.
 --size is the longest track dimension in tiles; --width is road width in tiles;
---simplify is the maximum centerline deviation in tiles (0 disables simplification).
---angles divides a full turn into allowed directions (32 means increments of PI/16;
-16 means increments of PI/8; 0 disables angle snapping).
---tileset compact uses 16 directions, nudging shallow PI/8 angles to the
-tiles' 1:2 pixel slope (about 26.6 degrees), and a fixed 26-image road palette:
+--tileset compact uses horizontal, vertical, diagonal, 1:2 and 2:1 slopes,
+and a fixed 26-image road palette:
 grass, full road, four diagonal corners, sixteen shallow edges, and four half tiles.
 Compact mode adds an approximately four-pixel outline without changing road pixels.
 Significant turns have red/white striped edging, starting nine tiles
@@ -23,22 +26,20 @@ Warnings include turns of at least 45 degrees and nearby bends totaling 67.5 deg
 Each outlined shape has solid and striped versions. Striped edges have a red
 first quarter, white middle half, and red final quarter; corner fillers are red.
 Angled outcroppings with no road bordering any flat edge are removed after tile selection.
-Short adjacent corners are combined when they stay within --simplify deviation.
 Road tiles must have matching sides, except a full road tile can meet a
 half-width slope when its edge follows the rasterized road. Removed outcroppings
 leave flat caps; other half-width edges cannot end in grass.
 Increase road width or map size if a layout cannot fit.
 The default detailed tileset retains the exact pixel-art edges where possible.
-The longest closed SVG path is used as the track centerline. Grass, road,
-and generated edge tiles draw straight road edges at 16 pixels per tile.
+Grass, road, and generated edge tiles draw straight road edges at 16 pixels per tile.
 --grass-color and --road-color accept distinct palette indices from 0 to 15.
 In compact mode, --outline-color must also differ from both colors. Grass defaults
 to transparent (0), road to 11, and the compact outline to red (2). Detailed mode
 ignores --outline-color and does not add an outline.
-The SVG must mark the finish with red and yellow paths. The output includes
+The output includes
 trackWaypoints: pairs of gate endpoints (start X/Y, end X/Y as Int32LE pixels).
 The first gate crosses the start/finish line, followed by one gate before and
-one after each generated turn in the yellow-to-red direction. Gates span about
+one after each generated turn in the travel direction. Gates span about
 six times the road width and may cross other roads or extend beyond any map edge.`
 
 function paletteColors(config) {
@@ -62,7 +63,7 @@ function paletteColors(config) {
 }
 
 function options(argv) {
-    const result = { size: 200, width: 4, simplify: 2, angles: 32,
+    const result = { size: 200, width: 4,
         tileset: "detailed", grassColor: 0, roadColor: 11, outlineColor: 2 }
     let input
     for (let i = 0; i < argv.length; i++) {
@@ -72,7 +73,7 @@ function options(argv) {
             result.batch = true
             continue
         }
-        if (["--size", "--width", "--simplify", "--angles", "--tileset", "--output",
+        if (["--size", "--width", "--tileset", "--output",
             "--grass-color", "--road-color", "--outline-color"].includes(arg)) {
             if (++i >= argv.length) throw new Error(`Missing value for ${arg}`)
             const key = arg.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
@@ -81,31 +82,21 @@ function options(argv) {
             throw new Error(`Unexpected argument: ${arg}`)
         } else input = arg
     }
-    if (result.batch && input) throw new Error("--batch does not accept an SVG file")
-    if (!result.batch && !input) throw new Error("Missing SVG file")
+    if (result.batch && input) throw new Error("--batch does not accept a track file")
+    if (!result.batch && !input) throw new Error("Missing track JSON file")
     if (result.batch && !argv.includes("--tileset")) result.tileset = "compact"
     if (!["detailed", "compact"].includes(result.tileset)) {
         throw new Error("--tileset must be detailed or compact")
     }
-    if (result.tileset === "compact" && !argv.includes("--angles")) result.angles = 16
-    for (const key of ["size", "width", "simplify"]) {
+    for (const key of ["size", "width"]) {
         if (result[key] === "") throw new Error(`Invalid --${key}`)
         result[key] = Number(result[key])
-        if (!Number.isFinite(result[key]) || result[key] < (key === "simplify" ? 0 : 0.1)) {
+        if (!Number.isFinite(result[key]) || result[key] < 0.1) {
             throw new Error(`Invalid --${key}`)
         }
     }
     if (!Number.isInteger(result.size) || result.size > 65000) {
         throw new Error("--size must be an integer below 65001")
-    }
-    if (result.angles === "") throw new Error("Invalid --angles")
-    result.angles = Number(result.angles)
-    if (!Number.isInteger(result.angles) || result.angles < 0 || result.angles > 128 ||
-        result.angles === 1 || result.angles % 2) {
-        throw new Error("--angles must be 0 or an even integer from 2 to 128")
-    }
-    if (result.tileset === "compact" && result.angles !== 16) {
-        throw new Error("--tileset compact requires --angles 16")
     }
     for (const key of ["grassColor", "roadColor"]) {
         if (result[key] === "") throw new Error(`Invalid --${key.replace("Color", "")}-color`)
@@ -128,226 +119,39 @@ function distanceSquared(p, a, b) {
     return (p.x - a.x - t * dx) ** 2 + (p.y - a.y - t * dy) ** 2
 }
 
-function flattenCurve(start, controls, end, out, tolerance = 0.75, depth = 0) {
-    if (depth === 14 || controls.every(p => distanceSquared(p, start, end) <= tolerance ** 2)) {
-        out.push(end)
-        return
+function parseEditorTrack(data) {
+    if (!data || data.version !== 1 || !Array.isArray(data.points)) {
+        throw new Error('Editor track must be {"version":1,"points":[[x,y],...]}')
     }
-    let points = [start, ...controls, end]
-    const levels = [points]
-    while (points.length > 1) {
-        points = points.slice(1).map((p, i) => ({
-            x: (p.x + points[i].x) / 2,
-            y: (p.y + points[i].y) / 2,
-        }))
-        levels.push(points)
-    }
-    const left = levels.map(level => level[0])
-    const right = levels.map(level => level[level.length - 1]).reverse()
-    flattenCurve(left[0], left.slice(1, -1), left.at(-1), out, tolerance, depth + 1)
-    flattenCurve(right[0], right.slice(1, -1), right.at(-1), out, tolerance, depth + 1)
-}
-
-function flattenArc(start, rx, ry, rotation, large, sweep, end, out) {
-    rx = Math.abs(rx)
-    ry = Math.abs(ry)
-    if (!rx || !ry || (start.x === end.x && start.y === end.y)) {
-        out.push(end)
-        return
-    }
-    const phi = rotation * Math.PI / 180
-    const cos = Math.cos(phi)
-    const sin = Math.sin(phi)
-    const dx = (start.x - end.x) / 2
-    const dy = (start.y - end.y) / 2
-    const x = cos * dx + sin * dy
-    const y = -sin * dx + cos * dy
-    const scale = Math.sqrt(x * x / (rx * rx) + y * y / (ry * ry))
-    if (scale > 1) {
-        rx *= scale
-        ry *= scale
-    }
-    const numerator = Math.max(0, (rx * ry) ** 2 - (rx * y) ** 2 - (ry * x) ** 2)
-    const denominator = (rx * y) ** 2 + (ry * x) ** 2
-    const factor = (large === sweep ? -1 : 1) * Math.sqrt(numerator / denominator)
-    const cx = factor * rx * y / ry
-    const cy = -factor * ry * x / rx
-    const middleX = (start.x + end.x) / 2
-    const middleY = (start.y + end.y) / 2
-    const angle = (ux, uy, vx, vy) => Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy)
-    const theta = angle(1, 0, (x - cx) / rx, (y - cy) / ry)
-    let delta = angle((x - cx) / rx, (y - cy) / ry, (-x - cx) / rx, (-y - cy) / ry)
-    if (sweep && delta < 0) delta += 2 * Math.PI
-    if (!sweep && delta > 0) delta -= 2 * Math.PI
-    const steps = Math.max(1, Math.ceil(Math.abs(delta) * Math.sqrt(Math.max(rx, ry) / 0.75)))
-    for (let i = 1; i < steps; i++) {
-        const a = theta + delta * i / steps
-        const px = rx * Math.cos(a)
-        const py = ry * Math.sin(a)
-        out.push({
-            x: middleX + cos * (px + cx) - sin * (py + cy),
-            y: middleY + sin * (px + cx) + cos * (py + cy),
-        })
-    }
-    out.push(end)
-}
-
-function parsePath(data) {
-    const tokens = data.match(/[a-zA-Z]|[-+]?(?:\d*\.?\d+|\d+\.?)(?:[eE][-+]?\d+)?/g) || []
-    const arity = { M: 2, L: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, T: 2, A: 7 }
-    const paths = []
-    let points = []
-    let current = { x: 0, y: 0 }
-    let start = current
-    let previous = ""
-    let control
-    let command
-    let i = 0
-    const isCommand = token => /^[a-zA-Z]$/.test(token)
-    while (i < tokens.length) {
-        if (isCommand(tokens[i])) {
-            command = tokens[i++]
-            if (command.toUpperCase() === "Z") {
-                if (points.length > 2) paths.push({ points, closed: true })
-                points = []
-                current = start
-                previous = "Z"
-                command = undefined
-                continue
-            }
-            if (!(command.toUpperCase() in arity)) throw new Error(`Unsupported SVG path command: ${command}`)
+    if (data.points.length < 3) throw new Error("Editor track needs at least three nodes")
+    const points = data.points.map((point, i) => {
+        if (!Array.isArray(point) || point.length !== 2 ||
+            point.some(value => !Number.isInteger(value) || value < 0 || value > 20)) {
+            throw new Error(`Editor node ${i + 1} must contain two integer coordinates from 0 to 20`)
         }
-        if (!command || i + arity[command.toUpperCase()] > tokens.length ||
-            tokens.slice(i, i + arity[command.toUpperCase()]).some(isCommand)) {
-            throw new Error("Malformed SVG path data")
+        return { x: point[0], y: point[1] }
+    })
+    for (let i = 0; i < points.length; i++) {
+        const a = points[i]
+        const b = points[(i + 1) % points.length]
+        const dx = Math.abs(b.x - a.x)
+        const dy = Math.abs(b.y - a.y)
+        if (!dx && !dy) throw new Error(`Editor segment ${i + 1} has zero length`)
+        if (!(dx === 0 || dy === 0 || dx === dy || dx === 2 * dy || dy === 2 * dx)) {
+            throw new Error(`Editor segment ${i + 1} has an invalid slope`)
         }
-        const relative = command === command.toLowerCase()
-        const kind = command.toUpperCase()
-        const values = tokens.slice(i, i += arity[kind]).map(Number)
-        const point = (x, y) => ({ x: x + (relative ? current.x : 0), y: y + (relative ? current.y : 0) })
-        const end = kind === "H" ? { x: values[0] + (relative ? current.x : 0), y: current.y }
-            : kind === "V" ? { x: current.x, y: values[0] + (relative ? current.y : 0) }
-                : point(values.at(-2), values.at(-1))
-        if (kind === "M") {
-            if (points.length > 1) paths.push({ points, closed: false })
-            points = [end]
-            start = end
-            command = relative ? "l" : "L"
-        } else if (!points.length) {
-            throw new Error("SVG path must start with M")
-        } else if (kind === "C") {
-            const c1 = point(values[0], values[1])
-            const c2 = point(values[2], values[3])
-            flattenCurve(current, [c1, c2], end, points)
-            control = c2
-        } else if (kind === "S") {
-            const c1 = previous === "C" || previous === "S"
-                ? { x: 2 * current.x - control.x, y: 2 * current.y - control.y } : current
-            const c2 = point(values[0], values[1])
-            flattenCurve(current, [c1, c2], end, points)
-            control = c2
-        } else if (kind === "Q" || kind === "T") {
-            const c = kind === "Q" ? point(values[0], values[1])
-                : previous === "Q" || previous === "T"
-                    ? { x: 2 * current.x - control.x, y: 2 * current.y - control.y } : current
-            flattenCurve(current, [c], end, points)
-            control = c
-        } else if (kind === "A") {
-            if (![values[3], values[4]].every(flag => flag === 0 || flag === 1)) {
-                throw new Error("SVG arc flags must be 0 or 1")
-            }
-            flattenArc(current, values[0], values[1], values[2], values[3], values[4], end, points)
-        } else {
-            points.push(end)
-        }
-        current = end
-        previous = kind
-    }
-    if (points.length > 1) paths.push({ points, closed: false })
-    return paths
-}
-
-function extractTrack(svg) {
-    if (/<(?:svg|path|g)\b[^>]*\btransform\s*=/i.test(svg)) {
-        throw new Error("SVG transforms are not supported; flatten transforms before exporting")
-    }
-    const paths = []
-    for (const match of svg.matchAll(/<path\b[^>]*>/gi)) {
-        const data = /\bd\s*=\s*(["'])(.*?)\1/is.exec(match[0])
-        if (data) paths.push(...parsePath(data[2]))
-    }
-    const closed = paths.filter(p => p.closed)
-    if (!closed.length) throw new Error("SVG must contain a closed <path> centerline")
-    const length = points => points.reduce((sum, p, i) => {
-        const q = points[(i + 1) % points.length]
-        return sum + Math.hypot(q.x - p.x, q.y - p.y)
-    }, 0)
-    return closed.sort((a, b) => length(b.points) - length(a.points))[0].points
-}
-
-function extractFinish(svg, track) {
-    const attribute = (tag, name) => {
-        const match = new RegExp(`\\b${name}\\s*=\\s*(["'])(.*?)\\1`, "is").exec(tag)
-        return match?.[2]
-    }
-    const strokeStyle = style => /(?:^|;)\s*stroke\s*:\s*([^;]+)/i.exec(style)?.[1]?.trim().toLowerCase()
-    const styles = new Map()
-    for (const match of svg.matchAll(/\.([a-zA-Z_][\w-]*)\s*\{([^}]*)\}/g)) {
-        styles.set(match[1], strokeStyle(match[2]))
-    }
-    const colored = { red: [], yellow: [] }
-    for (const match of svg.matchAll(/<path\b[^>]*>/gi)) {
-        const tag = match[0]
-        let stroke = attribute(tag, "stroke")?.toLowerCase()
-        for (const cls of (attribute(tag, "class") || "").split(/\s+/)) {
-            stroke = styles.get(cls) || stroke
-        }
-        stroke = strokeStyle(attribute(tag, "style") || "") || stroke
-        const color = ["red", "#f00", "#ff0000", "#ef4444"].includes(stroke) ? "red"
-            : ["yellow", "#ff0", "#ffff00", "#fbbf24"].includes(stroke) ? "yellow" : undefined
-        if (color) {
-            const data = attribute(tag, "d")
-            if (!data) throw new Error(`The ${color} path has no SVG path data`)
-            colored[color].push(...parsePath(data))
+        for (let j = i + 1; j < points.length; j++) {
+            const c = points[j]
+            const d = points[(j + 1) % points.length]
+            if (closestSegments(a, b, c, d).squared > 1e-10) continue
+            const adjacent = j === i + 1 || i === 0 && j === points.length - 1
+            const turn = (b.x - a.x) * (d.y - c.y) - (b.y - a.y) * (d.x - c.x)
+            const dot = (b.x - a.x) * (d.x - c.x) + (b.y - a.y) * (d.y - c.y)
+            if (adjacent && (turn !== 0 || dot > 0)) continue
+            throw new Error(`Editor segments ${i + 1} and ${j + 1} intersect or overlap`)
         }
     }
-    if (colored.red.length !== 1 || colored.yellow.length !== 1 ||
-        colored.red[0].closed || colored.yellow[0].closed) {
-        throw new Error("SVG must have one open red path and one open yellow path marking the finish")
-    }
-    const finish = colored.red[0].points[0]
-    const yellowEnd = colored.yellow[0].points.at(-1)
-    if (Math.hypot(finish.x - yellowEnd.x, finish.y - yellowEnd.y) > 2) {
-        throw new Error("The yellow path must end where the red path starts")
-    }
-    let nearest = 0
-    for (let i = 1; i < track.length; i++) {
-        if (distanceSquared(finish, track[i], track[i]) <
-            distanceSquared(finish, track[nearest], track[nearest])) nearest = i
-    }
-    if (Math.hypot(finish.x - track[nearest].x, finish.y - track[nearest].y) > 2) {
-        throw new Error("The colored finish does not lie on the closed centerline")
-    }
-    const tangent = colored.red[0].points[1]
-    if (!tangent) throw new Error("The red path needs a direction after the finish")
-    const next = track[(nearest + 1) % track.length]
-    let previous = track[(nearest - 1 + track.length) % track.length]
-    if (distanceSquared(previous, track[nearest], track[nearest]) < 1e-10) {
-        previous = track[(nearest - 2 + track.length) % track.length]
-    }
-    const heading = { x: tangent.x - finish.x, y: tangent.y - finish.y }
-    const alignment = p => {
-        const dx = p.x - track[nearest].x
-        const dy = p.y - track[nearest].y
-        return (heading.x * dx + heading.y * dy) / Math.hypot(dx, dy)
-    }
-    const forwardScore = alignment(next)
-    const backwardScore = alignment(previous)
-    if (!Number.isFinite(forwardScore) || !Number.isFinite(backwardScore) ||
-        Math.abs(forwardScore - backwardScore) < 1e-8) {
-        throw new Error("Cannot determine the red path's direction at the finish")
-    }
-    return { point: finish, forward: forwardScore > backwardScore }
+    return points
 }
 
 function simplifyOpen(points, toleranceSquared) {
@@ -411,207 +215,6 @@ function closestSegments(a, b, c, d) {
         if (!best || squared < best.squared) best = { ...candidate, x, y, squared }
     }
     return best
-}
-
-function separateTrack(points, roadWidth) {
-    const target = roadWidth + 2
-    const n = points.length
-    for (let iteration = 0; iteration < 300; iteration++) {
-        const movement = points.map(() => ({ x: 0, y: 0 }))
-        let violations = 0
-        const lengths = points.map((p, i) => Math.hypot(
-            points[(i + 1) % n].x - p.x, points[(i + 1) % n].y - p.y
-        ))
-        const cumulative = [0]
-        for (const length of lengths) cumulative.push(cumulative.at(-1) + length)
-        for (let i = 0; i < n; i++) {
-            for (let j = i + 2; j < n; j++) {
-                if (i === 0 && j === n - 1) continue
-                const along = cumulative[j] - cumulative[i + 1]
-                if (Math.min(along, cumulative[n] - along - lengths[i] - lengths[j]) < target) continue
-                const hit = closestSegments(points[i], points[(i + 1) % n], points[j], points[(j + 1) % n])
-                const distance = Math.sqrt(hit.squared)
-                if (distance >= target - 0.02) continue
-                violations++
-                let nx = hit.x / distance
-                let ny = hit.y / distance
-                if (distance < 1e-6) {
-                    const edge = points[(i + 1) % n]
-                    nx = -(edge.y - points[i].y) / lengths[i]
-                    ny = (edge.x - points[i].x) / lengths[i]
-                }
-                const correction = Math.min(0.4, (target - distance) * 0.2)
-                for (const [index, weight, sign] of [
-                    [i, 1 - hit.t, 1], [(i + 1) % n, hit.t, 1],
-                    [j, 1 - hit.u, -1], [(j + 1) % n, hit.u, -1],
-                ]) {
-                    movement[index].x += nx * correction * weight * sign
-                    movement[index].y += ny * correction * weight * sign
-                }
-            }
-        }
-        if (!violations) return points
-        for (let i = 0; i < n; i++) {
-            points[i] = {
-                x: points[i].x + movement[i].x,
-                y: points[i].y + movement[i].y,
-            }
-        }
-    }
-    throw new Error("Cannot fit a road with a clear gap; decrease --width or increase --size")
-}
-
-function snapDirections(points, divisions, roadWidth, finish, compact = false) {
-    if (compact && divisions !== 16) throw new Error("Compact directions require --angles 16")
-    if (!divisions) return points
-    const step = 2 * Math.PI / divisions
-    const vertices = points.slice()
-    const compactAngles = [0, Math.atan(1 / 2), Math.PI / 4, Math.atan(2)]
-    const direction = (a, b) => {
-        const angle = Math.atan2(b.y - a.y, b.x - a.x)
-        return ((Math.round(angle / step) % divisions) + divisions) % divisions
-    }
-    for (let attempt = 0; attempt < points.length - 2; attempt++) {
-        for (let i = 0; vertices.length > 3 && i < vertices.length;) {
-            const before = direction(vertices[i], vertices[(i + 1) % vertices.length])
-            const after = direction(vertices[(i + 1) % vertices.length], vertices[(i + 2) % vertices.length])
-            if (before === after) {
-                vertices.splice((i + 1) % vertices.length, 1)
-                i = Math.max(0, i - 1)
-            } else i++
-        }
-        const lines = vertices.map((p, i) => {
-            const q = vertices[(i + 1) % vertices.length]
-            const index = direction(p, q)
-            const angle = compact
-                ? Math.floor(index / 4) * Math.PI / 2 + compactAngles[index % 4]
-                : index * step
-            const nx = -Math.sin(angle)
-            const ny = Math.cos(angle)
-            return { nx, ny, offset: nx * (p.x + q.x) / 2 + ny * (p.y + q.y) / 2, angle }
-        })
-        const intersections = () => lines.map((line, i) => {
-            const prev = lines[(i + lines.length - 1) % lines.length]
-            const determinant = prev.nx * line.ny - prev.ny * line.nx
-            if (Math.abs(determinant) < 1e-8) {
-                throw new Error("Cannot join opposite snapped directions; increase --angles")
-            }
-            return {
-                x: (prev.offset * line.ny - line.offset * prev.ny) / determinant,
-                y: (prev.nx * line.offset - line.nx * prev.offset) / determinant,
-            }
-        })
-        let result = intersections()
-        let collapsed = -1
-        for (let i = 0; i < lines.length; i++) {
-            const a = result[i]
-            const b = result[(i + 1) % lines.length]
-            const projection = (b.x - a.x) * Math.cos(lines[i].angle) +
-                (b.y - a.y) * Math.sin(lines[i].angle)
-            if (projection < 0.2) {
-                collapsed = i
-                break
-            }
-        }
-        if (collapsed < 0) {
-            if (roadWidth === undefined) return result
-            let anchoredLine = -1
-            if (finish) {
-                let nearest = Infinity
-                for (let i = 0; i < result.length; i++) {
-                    const squared = distanceSquared(finish, result[i], result[(i + 1) % result.length])
-                    if (squared < nearest) {
-                        nearest = squared
-                        anchoredLine = i
-                    }
-                }
-                if (nearest > (roadWidth / 2 - 0.5) ** 2) {
-                    const line = lines[anchoredLine]
-                    line.offset = line.nx * finish.x + line.ny * finish.y
-                    result = intersections()
-                } else anchoredLine = -1
-            }
-            for (let iteration = 0; iteration < 40; iteration++) {
-                const separated = separateTrack(result.map(p => ({ ...p })), roadWidth)
-                const shift = Math.max(...separated.map((p, i) =>
-                    Math.hypot(p.x - result[i].x, p.y - result[i].y)))
-                if (shift < 0.03) return result
-                for (let i = 0; i < lines.length; i++) {
-                    if (i === anchoredLine) continue
-                    const line = lines[i]
-                    const next = separated[(i + 1) % lines.length]
-                    const a = separated[i]
-                    const offset = line.nx * (a.x + next.x) / 2 + line.ny * (a.y + next.y) / 2
-                    line.offset += (offset - line.offset) * 0.6
-                }
-                result = intersections()
-            }
-            throw new Error("Cannot maintain track clearance with snapped angles; increase --angles")
-        }
-        if (vertices.length === 3) break
-        vertices.splice((collapsed + 1) % vertices.length, 1)
-    }
-    throw new Error("Angle snapping collapses a track segment; increase --angles")
-}
-
-function collapseShortCorners(points, roadWidth, tolerance) {
-    if (!tolerance) return points
-    let vertices = points
-    const clearance = roadWidth + 2
-    const clear = candidate => {
-        const lengths = candidate.map((p, i) => Math.hypot(
-            candidate[(i + 1) % candidate.length].x - p.x,
-            candidate[(i + 1) % candidate.length].y - p.y
-        ))
-        const cumulative = [0]
-        for (const length of lengths) cumulative.push(cumulative.at(-1) + length)
-        for (let i = 0; i < candidate.length; i++) {
-            for (let j = i + 2; j < candidate.length; j++) {
-                if (i === 0 && j === candidate.length - 1) continue
-                const along = cumulative[j] - cumulative[i + 1]
-                if (Math.min(along, cumulative.at(-1) - along - lengths[i] - lengths[j]) < clearance) continue
-                if (closestSegments(candidate[i], candidate[(i + 1) % candidate.length],
-                    candidate[j], candidate[(j + 1) % candidate.length]).squared < (clearance - 0.1) ** 2) {
-                    return false
-                }
-            }
-        }
-        return true
-    }
-    for (let attempt = 0; attempt < points.length - 3; attempt++) {
-        let merged = false
-        for (let i = 0; i < vertices.length; i++) {
-            const n = vertices.length
-            const a = vertices[(i - 1 + n) % n]
-            const b = vertices[i]
-            const c = vertices[(i + 1) % n]
-            const d = vertices[(i + 2) % n]
-            if (Math.hypot(c.x - b.x, c.y - b.y) >= roadWidth) continue
-            const u = { x: b.x - a.x, y: b.y - a.y }
-            const v = { x: d.x - c.x, y: d.y - c.y }
-            const determinant = u.x * v.y - u.y * v.x
-            if (Math.abs(determinant) < 1e-8) continue
-            const t = ((c.x - a.x) * v.y - (c.y - a.y) * v.x) / determinant
-            const corner = { x: a.x + u.x * t, y: a.y + u.y * t }
-            if (Math.max(Math.hypot(corner.x - b.x, corner.y - b.y),
-                Math.hypot(corner.x - c.x, corner.y - c.y)) > tolerance ||
-                Math.hypot(corner.x - a.x, corner.y - a.y) < 0.2 ||
-                Math.hypot(d.x - corner.x, d.y - corner.y) < 0.2 ||
-                (corner.x - a.x) * u.x + (corner.y - a.y) * u.y <= 0 ||
-                (d.x - corner.x) * v.x + (d.y - corner.y) * v.y <= 0) continue
-            const candidate = vertices.slice()
-            if (i === n - 1) {
-                candidate[0] = corner
-                candidate.pop()
-            } else candidate.splice(i, 2, corner)
-            if (!clear(candidate)) continue
-            vertices = candidate
-            merged = true
-            break
-        }
-        if (!merged) break
-    }
-    return vertices
 }
 
 function gridAlignedSegment(a, b, maxShift, compact = false) {
@@ -1116,13 +719,13 @@ function addCompactTiles(masks, width, height, waypoints) {
     return { tiles, images: palette.map(maskImage), terrain }
 }
 
-function makeTilemap(svg, config) {
+function makeTilemap(source, config) {
     if (config.tileset !== undefined && !["detailed", "compact"].includes(config.tileset)) {
         throw new Error("Tileset must be detailed or compact")
     }
     const colors = paletteColors(config)
-    const track = extractTrack(svg)
-    const finish = extractFinish(svg, track)
+    const track = parseEditorTrack(source)
+    const finish = { point: track[0], forward: true }
     let minX = Infinity
     let minY = Infinity
     let maxX = -Infinity
@@ -1139,25 +742,7 @@ function makeTilemap(svg, config) {
     const scale = config.size / Math.max(spanX, spanY)
     const margin = Math.ceil(config.width / 2) + 2
     const points = track.map(p => ({ x: (p.x - minX) * scale + margin, y: (p.y - minY) * scale + margin }))
-    if (points.length > 1 && distanceSquared(points.at(-1), points[0], points[0]) < 1e-10) points.pop()
-    const simplified = simplifyLoop(points, config.simplify)
-    if (simplified.length < 3) throw new Error("Simplification removed too much of the track; lower --simplify")
-    if (config.tileset === "compact" && config.angles !== undefined && config.angles !== 16) {
-        throw new Error("Compact tileset requires --angles 16")
-    }
-    const divisions = config.angles ?? (config.tileset === "compact" ? 16 : 32)
-    const finishPoint = {
-        x: (finish.point.x - minX) * scale + margin,
-        y: (finish.point.y - minY) * scale + margin,
-    }
-    let centerlineVertices = snapDirections(separateTrack(simplified, config.width),
-        divisions, config.width, finishPoint)
-    if (config.tileset === "compact") {
-        // Remove tight kinks before adjusting shallow angles so the hairpin retains its clearance.
-        centerlineVertices = collapseShortCorners(centerlineVertices, config.width, config.simplify)
-        centerlineVertices = snapDirections(centerlineVertices, divisions, config.width, finishPoint, true)
-        centerlineVertices = collapseShortCorners(centerlineVertices, config.width, config.simplify)
-    }
+    const centerlineVertices = points
     const minSnappedX = Math.min(...centerlineVertices.map(p => p.x))
     const minSnappedY = Math.min(...centerlineVertices.map(p => p.y))
     const render = (phaseX, phaseY) => {
@@ -1221,7 +806,7 @@ function makeWaypoints(map, everyVertex = map.tileset === "compact") {
         if (!closest || distance < closest.distance) closest = { i, t, point, distance }
     }
     if (closest.distance > (map.roadWidth / 2) ** 2) {
-        throw new Error("Finish line moved off the road; increase --angles or lower --simplify")
+        throw new Error("Finish line moved off the road")
     }
     const { i, t, point } = closest
     const startIndex = t < 1e-6 ? i : (i + 1) % vertices.length
@@ -1319,6 +904,9 @@ function makeGates(map) {
             incoming - Math.min(clearance, incoming / 3), gates.length))
         gates.push(gateOnSegment(turn, next,
             Math.min(clearance, outgoing / 3), gates.length))
+    }
+    if (length - finishDistance <= 1) {
+        gates.push(gates.splice(1, 1)[0])
     }
     return gates
 }
@@ -1582,7 +1170,7 @@ function withTrackContext(name, action) {
 }
 
 function formatBatch(entries, compact = true) {
-    if (!entries.length) throw new Error("No SVG files found in tracks/")
+    if (!entries.length) throw new Error("No track JSON files found in tracks/")
     const colors = withTrackContext(entries[0].name, () => paletteColors(entries[0].map))
     const transparent = Array.from({ length: 16 }, () => "0".repeat(16)).join("\n")
     const images = [transparent]
@@ -1713,7 +1301,64 @@ ${routes}
 }
 // Auto-generated code. Do not edit.
 `
-    return { ts, jres: `${JSON.stringify(resources, null, 4)}\n` }
+    const centers = prepared.map(item => {
+        const points = makeWaypoints(item.map)
+        const data = Buffer.alloc(points.length * 4)
+        points.forEach((point, i) => {
+            data.writeUInt16LE(point.x, i * 4)
+            data.writeUInt16LE(point.y, i * 4 + 2)
+        })
+        return `    //% whenUsed
+    export const ${item.id} = hex\`${data.toString("hex")}\`;`
+    }).join("\n")
+    const widths = prepared.map(item => `    //% whenUsed
+    export const ${item.id} = ${Math.round(item.map.roadWidth * 16)};`).join("\n")
+    const geometry = `// Auto-generated code. Do not edit.
+
+// Each vertex is X/Y as UInt16LE pixels, four bytes per vertex.
+// Shared gates are 16-byte Int32LE records: gate 0 crosses the finish on the last-to-first segment,
+// Turn gates follow traversal order; when the finish is at vertex zero,
+// its approach gate is last, so the first checkpoint lies beyond the finish.
+// Vertices follow gate traversal order; connect the last vertex back to the first.
+namespace trackCenterlines {
+${centers}
+}
+
+// Road width in pixels.
+namespace trackRoadWidths {
+${widths}
+}
+// Auto-generated code. Do not edit.
+`
+    return { ts, jres: `${JSON.stringify(resources, null, 4)}\n`, geometry }
+}
+
+function readTrack(file) {
+    if (!file.toLowerCase().endsWith(".json")) throw new Error("Track input must be a JSON file")
+    const source = fs.readFileSync(file, "utf8")
+    const data = JSON.parse(source)
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+        throw new Error('Editor track must be {"version":1,"points":[[x,y],...]}')
+    }
+    return data
+}
+
+function formatEditorTracks(entries) {
+    const definitions = entries.filter(entry => entry.definition).map(({ name, definition }) => {
+        const points = parseEditorTrack(definition)
+        const label = path.parse(name).name.replace(/[_-]+/g, " ")
+        return `        { name: ${JSON.stringify(label)}, points: [${points.map(point =>
+            `{ x: ${point.x}, y: ${point.y} }`).join(", ")}] }`
+    })
+    return `// Auto-generated code. Do not edit.
+namespace racing.trackEditor {
+    export function getTracks(): Definition[] {
+        return [
+${definitions.join(",\n")}
+        ];
+    }
+}
+`
 }
 
 if (require.main === module) {
@@ -1722,18 +1367,22 @@ if (require.main === module) {
         if (config.help) {
             console.log(usage)
         } else if (config.batch) {
-            const tracks = fs.readdirSync(__dirname).filter(name => name.toLowerCase().endsWith(".svg")).sort()
-            const entries = tracks.map(name => withTrackContext(name, () => ({
-                name, map: makeTilemap(fs.readFileSync(path.join(__dirname, name), "utf8"), config),
-            })))
+            const tracks = fs.readdirSync(__dirname).filter(name => /\.json$/i.test(name)).sort()
+            const entries = tracks.map(name => withTrackContext(name, () => {
+                const source = readTrack(path.join(__dirname, name))
+                return { name, map: makeTilemap(source, config), definition: source }
+            }))
             const output = formatBatch(entries, config.tileset === "compact")
+            const editorTracks = formatEditorTracks(entries)
             const directory = config.output || path.dirname(__dirname)
             fs.mkdirSync(directory, { recursive: true })
             fs.writeFileSync(path.join(directory, "tilemap.g.ts"), output.ts)
             fs.writeFileSync(path.join(directory, "tilemap.g.jres"), output.jres)
+            fs.mkdirSync(path.join(directory, "ai"), { recursive: true })
+            fs.writeFileSync(path.join(directory, "ai/geometry.g.ts"), output.geometry)
+            fs.writeFileSync(path.join(directory, "track-editor-tracks.g.ts"), editorTracks)
         } else {
-            const svg = fs.readFileSync(config.input, "utf8")
-            const output = formatTilemap(makeTilemap(svg, config))
+            const output = formatTilemap(makeTilemap(readTrack(config.input), config))
             if (config.output) fs.writeFileSync(config.output, output)
             else process.stdout.write(output)
         }
@@ -1744,7 +1393,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-    parsePath, extractTrack, extractFinish, simplifyLoop, separateTrack, snapDirections,
+    parseEditorTrack, simplifyLoop,
     rasterizePixels, addCompactTiles, outlineMap, makeTilemap, makeWaypoints, makeGates,
-    formatTilemap, formatBatch, encodeImage,
+    formatTilemap, formatBatch, formatEditorTracks, encodeImage,
 }

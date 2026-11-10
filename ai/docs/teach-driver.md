@@ -2,7 +2,7 @@
 
 The teaching block in the **Racing** category records one driving lap on the
 selected course. Its dropdown offers [Test Track](test-track.md) (the default),
-Australia, Great Britain, Italy, Monaco, Netherlands, and USA.
+Monclava, Strasbourg, Vancouver, Hanover, Birmingham, Seattle, and Sydney.
 The block always teaches **one lap**, including on Test Track.
 The starting menu can instead choose a course followed by 1–4 continuous
 training laps; menu training on Test Track defaults to three laps.
@@ -22,7 +22,7 @@ aiRacing.teachDriver(racing.TrainingTrack.TestTrack)
 ```
 
 Calling `aiRacing.teachDriver()` without an argument now selects Test Track.
-Pass `racing.TrainingTrack.Monaco` explicitly to keep the previous course.
+Pass `racing.TrainingTrack.Monclava` explicitly to select Monclava.
 Each new lesson uses the selected track, even after teaching on a different
 course in the same program.
 
@@ -85,11 +85,11 @@ the chart does not change the model.
 ## Example
 
 ```blocks
-aiRacing.teachDriver(racing.TrainingTrack.Monaco)
-racing.raceOnTrack(racing.Track.Monaco, 1, racing.RaceDriver.AI)
+aiRacing.teachDriver(racing.TrainingTrack.Monclava)
+racing.raceOnTrack(racing.Track.Monclava, 1, racing.RaceDriver.AI)
 ```
 
-This example teaches on Monaco, then watches the trained AI race there without
+This example teaches on Monclava, then watches the trained AI race there without
 opening the game menu.
 
 ## Reading the code

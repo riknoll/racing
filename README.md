@@ -1,4 +1,5 @@
-F1 track SVGs taken from https://github.com/f1laps/f1-track-vectors/tree/981ef8e7bc9cb98380602f65f9b7b7f2ba0fe5d9. See LICENSE in that repo for usage details.
+Race tracks are authored as JSON definitions in `tracks/` using the in-game track editor.
+The current courses are Birmingham, Vancouver, Strasbourg, Monclava, Hanover, Seattle, and Sydney.
 
 See [AI racing](ai/README.md) for the added teaching activity.
 
@@ -31,3 +32,62 @@ makecode build --java-script
 Commit `track-previews.g.ts` and `track-previews.g.jres` with the source changes.
 The dependency-free generator bakes the scrolling/wobbling menu animations;
 CI checks that these assets are current. See [track preview settings](docs/start-game.md#track-previews).
+
+## Track editor
+
+Choose **Track Editor** from the game menu (or call `racing.editTrack()`).
+Choose **New Track** for an empty grid, or select any JSON-defined track to edit
+its original nodes. Back returns to this picker. Rerun batch generation after
+adding or changing track JSON files to update the picker.
+The grid has 20 by 20 cells, each five pixels wide, with nodes at intersections
+numbered 0 through 20 on each axis.
+
+- Use the D-pad to move the cursor. Press A to append a node.
+- Press A on a segment to insert a node there, splitting it into two segments.
+- Hold A on an existing node, move it with the D-pad, and release A to drop it.
+- Press B over a node to delete it.
+- Quickly double-tap A on a node to make it the start without changing travel direction.
+- Move right past the grid's right edge to select **Save**. Up/down selects
+  the sidebar tools; left returns to the grid, and A activates the button.
+- Select **Shift**, then use the D-pad to move the entire track one grid step.
+  Moves outside the grid are blocked. A or B exits Shift mode.
+- Select **Reverse** to reverse travel direction while keeping the same start node.
+- **Flip H** mirrors left/right, **Flip V** mirrors up/down, and **Rotate** turns
+  the track 90 degrees clockwise. These use the grid center and preserve node order.
+
+The preview automatically connects the last node back to the first. The yellow
+first node defines the finish, and its yellow outgoing segment shows travel direction.
+Crossings, nonadjacent touching segments, overlaps, and slopes other than
+horizontal, vertical, 1:1, 1:2, or 2:1 are red. Saving requires at least three
+nodes and no invalid segments. Save prints one JSON object in the console:
+
+```json
+{"version":1,"points":[[0,0],[20,0],[20,20],[0,20]]}
+```
+
+Copy that line into `tracks/<name>.json`. To generate a standalone map:
+
+```sh
+node tracks/create-tilemap.js tracks/<name>.json --tileset compact --output track.ts
+```
+
+To regenerate the project's tilemaps, gates, AI geometry, and previews:
+
+```sh
+node tracks/create-tilemap.js --batch
+node tracks/create-track-previews.js
+makecode build --java-script
+```
+
+Batch generation also writes `track-editor-tracks.g.ts` with the editable definitions.
+Only JSON definitions are supported. Editor nodes are scaled without simplification
+or repositioning. New course names also need entries in `courses.ts` and the
+`Track` enum in `race.ts`. Assign matching `TrainingTrack` values as `Track + 1`,
+without reusing removed track IDs. Back closes the editor;
+copy the console output before leaving, because drafts are not persisted.
+
+Run editor and generator tests with Node.js 22.13 or newer:
+
+```sh
+node --test tracks/*.test.js
+```
