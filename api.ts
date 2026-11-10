@@ -80,20 +80,46 @@ namespace racing {
     }
 
     /**
-     * Stamp an 8x8 sponsor logo onto the player's car.
-     * @param logo an 8x8 drawing; transparent pixels leave the car visible
+     * Draw a team logo on the track beneath the selected team's starting position.
+     * @param logo a 40x40 drawing; transparent pixels leave the track visible
+     * @param target the car's team, defaulting to the player
      */
-    //% blockId=racing_set_car_logo block="set car logo $logo"
-    //% help=github:this/docs/set-car-logo
+    //% blockId=racing_set_team_logo block="set team logo $logo||for $target"
+    //% help=github:this/docs/set-team-logo
     //% group="Car" weight=100
+    //% expandableArgumentMode=toggle
+    //% inlineInputMode=inline
+    //% target.defl=racing.CarTarget.Player
     //% logo.fieldEditor="sprite"
     //% logo.fieldOptions.taggedTemplate="img"
     //% logo.fieldOptions.decompileIndirectFixedInstances="true"
     //% logo.fieldOptions.decompileArgumentAsString="true"
-    //% logo.fieldOptions.sizes="8,8"
-    //% logo.fieldOptions.initWidth="8" logo.fieldOptions.initHeight="8"
+    //% logo.fieldOptions.sizes="40,40"
+    //% logo.fieldOptions.initWidth="40" logo.fieldOptions.initHeight="40"
+    //% logo.fieldOptions.disableResize="true"
     //% logo.fieldOptions.filter="!tile !background !dialog"
-    export function setCarLogo(logo: Image): void {
-        setPlayerLogo(logo);
+    export function setTeamLogo(logo: Image, target: CarTarget = CarTarget.Player): void {
+        setTeamLogoImage(logo, target);
+    }
+
+    /**
+     * Choose a car style and its body and shading colors.
+     * @param style Racing car or Mercedes car
+     * @param bodyColor the body paint color, eg: 1
+     * @param shadowColor the shading and accent color, eg: 6
+     * @param target the car's team, defaulting to the player
+     */
+    //% blockId=racing_set_car_theme block="set car theme $style body $bodyColor shading $shadowColor||for $target"
+    //% help=github:this/docs/set-car-theme
+    //% group="Car" weight=90
+    //% expandableArgumentMode=toggle
+    //% inlineInputMode=inline
+    //% style.defl=racing.CarStyle.RacingCar
+    //% bodyColor.shadow=colorindexpicker bodyColor.defl=1
+    //% shadowColor.shadow=colorindexpicker shadowColor.defl=6
+    //% target.defl=racing.CarTarget.Player
+    export function setCarTheme(style: CarStyle, bodyColor: number = 1, shadowColor: number = 6,
+        target: CarTarget = CarTarget.Player): void {
+        setTeamCarTheme(style, bodyColor, shadowColor, target);
     }
 }

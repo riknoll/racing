@@ -14,7 +14,12 @@ See [AI racing](ai/README.md) for the added teaching activity.
 - [Race on a track](docs/race-on-track.md): choose a map, lap count, and player or trained AI driver in blocks. A bot picker appears only when multiple AIs are trained.
 - [Teach AI by driving one lap on a track](ai/docs/teach-driver.md): choose a training course, defaulting to one lap on Test Track.
 - [View memories](docs/view-memories.md): reopen saved AI steering and pedal data without driving another lap, including after a simulator restart.
-- [Set car logo](docs/set-car-logo.md): draw an 8x8 sponsor badge for the player car.
+- [Set team logo](docs/set-team-logo.md): draw a native-size 40x40 starting-block decal beneath a car's grid position.
+- [Set car theme](docs/set-car-theme.md): choose Racing car or Mercedes car and pick the body and shading colors. Mercedes temporarily uses the racing-car artwork until its custom asset arrives.
+
+Both customization blocks have a **+** to choose **player**, **bot 1**, or
+**bot 2**; the collapsed block applies to the player. Themes and logos belong
+to these teams, including when a trained bot races or is watched on its own.
 
 All blocks appear in the **Racing** category and are exposed by
 [api.ts](api.ts) and [ai/activity.ts](ai/activity.ts). [main.ts](main.ts) is listed under

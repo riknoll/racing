@@ -52,7 +52,8 @@
         "docs/learn-to-drive.md",
         "docs/race-on-track.md",
         "docs/view-memories.md",
-        "docs/set-car-logo.md"
+        "docs/set-team-logo.md",
+        "docs/set-car-theme.md"
     ],
     "testFiles": [
         "main.ts"

@@ -41,8 +41,10 @@ namespace racing {
                 100,
             );
 
-        const aiPlayer = bot ? new aiRacing.LearningCar(stats, racing.getPlayerCarFrames(), track) : undefined;
-        const player: racing.Car = aiPlayer || new racing.Car(stats, racing.getPlayerCarFrames());
+        const playerTarget = bot ? bot.index + 1 : CarTarget.Player;
+        const playerFrames = getTeamCarFrames(playerTarget);
+        const aiPlayer = bot ? new aiRacing.LearningCar(stats, playerFrames, track) : undefined;
+        const player: racing.Car = aiPlayer || new racing.Car(stats, playerFrames);
         if (aiPlayer) {
             aiPlayer.driver = bot.driver;
             aiPlayer.paused = true;
@@ -51,12 +53,15 @@ namespace racing {
         const places: racing.Car[] = [];
 
         const opponents: aiRacing.LearningCar[] = [];
+        const carTargets: CarTarget[] = [playerTarget];
         const bots = aiRacing.getBotSlots();
         for (let i = 0; i < numOpponents; i++) {
             const botSlot = bots[i % bots.length];
 
-            const opponent = new aiRacing.LearningCar(stats, racing.getCarFrames(i), track);
+            const target = botSlot.index + 1;
+            const opponent = new aiRacing.LearningCar(stats, getTeamCarFrames(target), track);
             opponents.push(opponent);
+            carTargets.push(target);
 
             if (botSlot && botSlot.driver.count() >= aiRacing.MIN_EXAMPLES) {
                 opponent.driver = botSlot.driver;
@@ -65,6 +70,7 @@ namespace racing {
         }
 
         const allCars = [player].concat(opponents);
+        const teamLogos: scene.Renderable[] = [];
 
         const firstGate = gateCenter(gates[0]);
         const startingAngle = track.startHeading;
@@ -89,6 +95,7 @@ namespace racing {
                 car.lastTrackY = car.y;
             }
             places.push(car);
+            teamLogos.push(createTeamLogo(car, carTargets[i]));
         }
 
         const stopFollowing = followRaceCar(player);
@@ -230,6 +237,7 @@ namespace racing {
             eventContext.unregisterFrameHandler(handler);
             eventContext.unregisterFrameHandler(accelerationHandler);
             stopFollowing();
+            for (const logo of teamLogos) logo.destroy();
             countdownSprite.destroy();
             carEffects.destroy();
             game.popScene();
@@ -258,7 +266,7 @@ namespace racing {
         const heading = track.startHeading;
         for (let i = 0; i < 3; i++) {
             const stats = new RacerStats(100 - i * 5, 100 - i * 10, i === 0 ? 85 : 100, 80 + i * 10, 100, 100);
-            const car = new aiRacing.LearningCar(stats, getCarFrames(i), track);
+            const car = new aiRacing.LearningCar(stats, getTeamCarFrames(i), track);
             const sideways = i === 2 ? track.roadWidth * 0.55 : (i - 0.5) * 18;
             const behind = 25 + i * 20;
             car.x = firstGate.x - behind * Math.cos(heading) - sideways * Math.sin(heading);

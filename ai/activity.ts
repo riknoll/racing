@@ -15,6 +15,7 @@ namespace aiRacing {
     let selectedBot = 0;
     let trainingLaps = 1;
     let drivingDisplay: racing.DrivingDisplay;
+    let teamLogos: scene.Renderable[] = [];
 
     /**
      * Record one lap of player driving on the selected training track.
@@ -46,6 +47,7 @@ namespace aiRacing {
         disposeCars();
         driver = new Driver();
         player = new LearningCar(new racing.RacerStats(100, 100, 100, 100, 100, 100), racing.getPlayerCarFrames(), track);
+        teamLogos.push(racing.createTeamLogo(player));
         cars.push(player);
         carEffects.push(new racing.effects.CarEffects(player));
         player.paused = true;
@@ -112,7 +114,7 @@ namespace aiRacing {
         }
         releaseButtons();
         player.setFlag(SpriteFlag.Invisible, true);
-        const racer = addRacer(1);
+        const racer = addRacer(selectedBot + 1);
         watchedCar = racer;
         if (drivingDisplay) drivingDisplay.destroy();
         drivingDisplay = new racing.DrivingDisplay(track.gates, racer, 1);
@@ -138,7 +140,11 @@ namespace aiRacing {
         if (colorIndex < 0 || colorIndex >= racing.colorMap.height || colorIndex !== Math.floor(colorIndex)) {
             throw "Choose a valid racing car color";
         }
-        const racer = new LearningCar(player.stats, racing.getCarFrames(colorIndex), track);
+        const target = colorIndex === 1 ? racing.CarTarget.Bot1 : racing.CarTarget.Bot2;
+        const isBot = colorIndex === 1 || colorIndex === 2;
+        const frames = isBot ? racing.getTeamCarFrames(target) : racing.getCarFrames(colorIndex);
+        const racer = new LearningCar(player.stats, frames, track);
+        if (isBot) teamLogos.push(racing.createTeamLogo(racer, target));
         racer.driver = driver;
         cars.push(racer);
         carEffects.push(new racing.effects.CarEffects(racer));
@@ -263,6 +269,8 @@ namespace aiRacing {
     }
 
     function disposeCars(): void {
+        for (const logo of teamLogos) logo.destroy();
+        teamLogos = [];
         for (const effects of carEffects) effects.destroy();
         carEffects = [];
         for (const car of cars) car.destroy();

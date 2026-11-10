@@ -107,6 +107,7 @@ namespace racing {
         private caption: fancyText.TextSprite;
         private ok: fancyText.TextSprite;
         private overlay: scene.Renderable;
+        private teamLogo: scene.Renderable;
         private disposeUpdate: () => void;
         private arrived = false;
         private highlighted: TutorialButton[] = [];
@@ -281,6 +282,7 @@ namespace racing {
             this.createTurnSigns();
             this.car = new TutorialCar(this.stats);
             this.car.setPosition(28, this.track.baseline);
+            this.teamLogo = createTeamLogo(this.car);
             this.car.speed = 55;
             this.car.controlState = ControlStateFlag.AccelerationOn;
             this.carEffects = new effects.CarEffects(this.car);
@@ -397,6 +399,7 @@ namespace racing {
         private destroy(): void {
             if (this.disposeUpdate) this.disposeUpdate();
             if (this.overlay) this.overlay.destroy();
+            if (this.teamLogo) this.teamLogo.destroy();
             if (this.caption) this.caption.destroy();
             if (this.ok) this.ok.destroy();
             if (this.carEffects) this.carEffects.destroy();

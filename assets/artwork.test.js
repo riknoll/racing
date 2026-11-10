@@ -139,35 +139,6 @@ test("cancelling anywhere in the countdown cannot start a race", () => {
     }
 })
 
-test("sponsor badges rotate through eight poses without changing silhouettes or stock images", () => {
-    const context = loadArtwork()
-    runTs(context, "player-logo.ts")
-    const { racing } = context
-    const stock = racing.getCarFrames(0)
-    const badge = new TestImage(8, 8, Uint8Array.from({ length: 64 }, (_, i) => i < 32 ? 11 : 13))
-    racing.setPlayerLogo(badge)
-    badge.pixels.fill(7)
-    const frames = racing.getPlayerCarFrames()
-    assert.equal(frames.length, 8)
-    for (let frame = 0; frame < frames.length; frame++) {
-        const top = [], bottom = []
-        frames[frame].pixels.forEach((pixel, i) => {
-            assert.equal(!!pixel, !!stock[frame].pixels[i], `silhouette, pose ${frame}`)
-            if (pixel === 11) top.push([i % 32, Math.floor(i / 32)])
-            if (pixel === 13) bottom.push([i % 32, Math.floor(i / 32)])
-        })
-        assert.ok(top.length && bottom.length, `badge visible, pose ${frame}`)
-        const average = (points, axis) => points.reduce((sum, point) => sum + point[axis], 0) / points.length
-        const dx = average(top, 0) - average(bottom, 0)
-        const dy = average(top, 1) - average(bottom, 1)
-        assert.ok(dx * Math.cos(frame * Math.PI / 4) + dy * Math.sin(frame * Math.PI / 4) > 0,
-            `badge top faces forward, pose ${frame}`)
-    }
-    racing.setPlayerLogo(new TestImage(8, 8))
-    racing.getPlayerCarFrames().forEach((frame, i) => assert.deepEqual(frame.pixels, stock[i].pixels))
-    racing.getCarFrames(0).forEach((frame, i) => assert.deepEqual(frame.pixels, stock[i].pixels))
-})
-
 test("startup shows a one-second splash only once and keeps the main-menu script identity", () => {
     let now = 0, draws = 0, destroyedAt, depth = 0
     const menus = []
