@@ -91,6 +91,7 @@ namespace racing {
             places.push(car);
         }
 
+        const stopFollowing = followRaceCar(player);
         const timer = racing.createTimer("compact");
         timer.top = 0;
 
@@ -188,10 +189,6 @@ namespace racing {
                 }
             }
 
-            scene.centerCameraAt(
-                player.x + 30 * Math.cos(player.heading),
-                player.y + 30 * Math.sin(player.heading)
-            );
         });
 
         pauseUntilAllButtonsReleased();
@@ -232,6 +229,7 @@ namespace racing {
             hudRenderable.destroy();
             eventContext.unregisterFrameHandler(handler);
             eventContext.unregisterFrameHandler(accelerationHandler);
+            stopFollowing();
             countdownSprite.destroy();
             carEffects.destroy();
             game.popScene();

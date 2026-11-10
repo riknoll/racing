@@ -1,6 +1,6 @@
 {
     "name": "Ready Set Race!",
-    "version": "0.1.0",
+    "version": "0.1.2",
     "files": [
         "storage.ts",
         "effects.ts",
@@ -51,6 +51,7 @@
         "docs/start-game.md",
         "docs/learn-to-drive.md",
         "docs/race-on-track.md",
+        "docs/view-memories.md",
         "docs/set-car-logo.md"
     ],
     "testFiles": [
