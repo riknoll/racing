@@ -24,9 +24,9 @@ namespace racing {
             case RaceSpeed.Fast: speedStat = 100; break;
             default: throw "Choose a valid race speed";
         }
-        game.pushScene();
         const track = course.createTrack();
         const gates = track.gates;
+        game.pushScene();
 
         aiRacing.loadBots();
 
@@ -237,7 +237,7 @@ namespace racing {
     }
 
     export function startMenuRaceBackground(): () => void {
-        const courses = getCourses();
+        const courses = getUnlockedCourses();
         const course = courses[randint(0, courses.length - 1)];
         const track = course.createTrack();
         const finishLineSprite = createRaceScenery(course, track.gates);

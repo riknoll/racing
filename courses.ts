@@ -45,6 +45,7 @@ namespace racing {
         }
 
         createTrack(): aiRacing.Track {
+            if (!isTrackUnlocked(this.trackId)) throw "Finish a race on every other track to unlock Seattle";
             return new aiRacing.Track(this.gates, this.centers, this.roadWidth);
         }
     }
@@ -144,6 +145,20 @@ namespace racing {
         return courses;
     }
 
+    export function isTrackUnlocked(track: Track): boolean {
+        if (track !== Track.Seattle) return true;
+        for (const course of getCourses()) {
+            if (course.trackId === Track.Seattle) continue;
+            if (!hasStorageKey(course.trackId, StorageKey.TotalRaces)
+                || !(readStorage(course.trackId, StorageKey.TotalRaces) > 0)) return false;
+        }
+        return true;
+    }
+
+    export function getUnlockedCourses(): Course[] {
+        return getCourses().filter(course => isTrackUnlocked(course.trackId));
+    }
+
     export function getTrainingCourses(): Course[] {
         if (!testTrack) {
             testTrack = new Course(undefined, "Test Track", aiRacing.getTestTrackMap(), aiRacing.TEST_TRACK_GATES,
@@ -151,5 +166,9 @@ namespace racing {
                 BackgroundTileset.Checkerboard);
         }
         return [testTrack].concat(getCourses());
+    }
+
+    export function getUnlockedTrainingCourses(): Course[] {
+        return getTrainingCourses().filter(course => isTrackUnlocked(course.trackId));
     }
 }

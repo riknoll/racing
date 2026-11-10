@@ -91,7 +91,7 @@ namespace racing {
     }
 
     function chooseRace(): void {
-        const courses = getCourses();
+        const courses = getUnlockedCourses();
         const options: MenuOption[] = [
             { name: "LAPS", values: ["1", "2", "3", "4"] },
             { name: "OPPONENTS", values: ["0", "1", "2", "3"], initialSelection: 3 },
@@ -115,7 +115,7 @@ namespace racing {
     function chooseTraining(): void {
         const slot = chooseMenu("Train AI", aiRacing.botNames());
         if (slot < 0) return;
-        const courses = getTrainingCourses();
+        const courses = getUnlockedTrainingCourses();
         while (true) {
             const course = chooseTrackMenu("SELECT TRACK", courses);
             if (course < 0) return;
@@ -140,7 +140,7 @@ namespace racing {
             const trained = bot.driver.count() >= aiRacing.MIN_EXAMPLES;
             const confirmed = aiRacing.showTrainingSummary(bot.driver);
             if (!confirmed || !trained) return;
-            const courses = getTrainingCourses();
+            const courses = getUnlockedTrainingCourses();
             const course = chooseTrackMenu("Watch track", courses);
             if (course < 0) continue;
             aiRacing.watchBotLap(bot.index, courses[course]);

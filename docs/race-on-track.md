@@ -5,6 +5,9 @@ Strasbourg, Vancouver, Hanover, Birmingham, Seattle, or Sydney, **1-4 laps**, an
 driver dropdown. The default is **player**, so existing programs keep their
 normal controls. This block keeps three
 opponents and Fast speed; the game menu offers configurable race options.
+Seattle requires a completed player race on every other course before it can be
+selected, including through this block. Existing saved finishes count; winning
+is not required.
 
 ```sig
 racing.raceOnTrack(racing.Track.Monclava, 1, racing.RaceDriver.Player)

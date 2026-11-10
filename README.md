@@ -1,5 +1,9 @@
 Race tracks are authored as JSON definitions in `tracks/` using the in-game track editor.
 The current courses are Birmingham, Vancouver, Strasbourg, Monclava, Hanover, Seattle, and Sydney.
+Seattle is hidden until the player finishes a race on every other course.
+Any placement, speed, or lap count qualifies; saved finishes from earlier sessions
+count. Training, watching AI, and the tutorial do not count. Once unlocked, Seattle
+appears in race, training, and watch-track menus and can appear in the menu demo.
 
 See [AI racing](ai/README.md) for the added teaching activity.
 

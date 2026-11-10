@@ -146,10 +146,10 @@ namespace aiRacing {
     }
 
     function initialize(course: racing.Course): void {
+        track = course.createTrack();
         tiles.setCurrentTilemap(course.tilemap);
         scene.setBackgroundImage(racing.generateBackground(course.backgroundTileset));
         scroller.scrollBackgroundWithCamera(scroller.CameraScrollMode.BothDirections);
-        track = course.createTrack();
         if (initialized) return;
         initialized = true;
         game.onUpdate(() => {
