@@ -14,4 +14,5 @@ jobs:
         with:
           node-version: 22
       - run: node tracks/create-track-previews.js --check
+      - run: node assets/create-assets.js --check
       - run: npx makecode

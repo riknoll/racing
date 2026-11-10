@@ -37,7 +37,7 @@ racing.startGame()
 If you name the image `raceLogo` in the image editor, TypeScript can also use
 ``racing.setCarLogo(assets.image`raceLogo`)``.
 
-The logo rotates with the car's four poses and is kept inside its existing
+The logo rotates with the car's eight poses and is kept inside its existing
 silhouette. It appears during racing and human AI training, not on AI opponents.
 It does not change speed, handling, collision shape, or the road sensors.
 

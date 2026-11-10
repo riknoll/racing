@@ -196,34 +196,26 @@ namespace racing {
 
         pauseUntilAllButtonsReleased();
 
-        const countdownSprite = fancyText.create("3", 0, fancyText.twoToneColor(1, 12), outlinedRacingFont);
+        const countdownSprite = sprites.create(createRaceLightImage(0));
         countdownSprite.setFlag(SpriteFlag.RelativeToCamera, true);
         countdownSprite.setFlag(SpriteFlag.Ghost, true);
+        countdownSprite.x = screen.width / 2;
+        countdownSprite.top = 0;
+        countdownSprite.z = 100;
 
         try {
             control.runInBackground(() => {
-                for (let i = 3; i > 0; i--) {
-                    if (cancelled) return;
-                    countdownSprite.setText(i.toString());
-                    countdownSprite.x = screen.width / 2;
-                    countdownSprite.y = screen.height / 2;
-                    pause(1000);
-                }
-                if (cancelled) return;
-                countdownSprite.setText("GO");
-                countdownSprite.x = screen.width / 2;
-                countdownSprite.y = screen.height / 2;
-                timer.setRunning(true);
-                if (aiPlayer) aiPlayer.paused = false;
-                else player.controlEnabled = true;
-                for (const opponent of opponents) {
-                    if (!opponent.driver) {
-                        opponent.startAutoDrive(gates);
+                animateRaceStartLights(countdownSprite, () => cancelled, () => {
+                    timer.setRunning(true);
+                    if (aiPlayer) aiPlayer.paused = false;
+                    else player.controlEnabled = true;
+                    for (const opponent of opponents) {
+                        if (!opponent.driver) {
+                            opponent.startAutoDrive(gates);
+                        }
+                        opponent.paused = false;
                     }
-                    opponent.paused = false;
-                }
-                pause(1000);
-                if (!cancelled) countdownSprite.destroy();
+                });
             });
 
             pauseUntil(() => finished || (aiPlayer && controller.B.isPressed()));

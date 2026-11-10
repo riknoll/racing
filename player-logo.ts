@@ -31,53 +31,53 @@ namespace racing {
     }
 
     function stampLogo(base: Image, logo: Image, frame: number): Image {
-        const body = colorMap.getPixel(1, 0);
-        const highlight = colorMap.getPixel(0, 0);
+        const body = colorMap.getPixel(0, 0);
+        const shadow = colorMap.getPixel(1, 0);
+        const size = frame % 2 ? 12 : LOGO_SIZE;
+        const angle = (frame + 2) * Math.PI / 4;
+        const cosine = Math.cos(angle);
+        const sine = Math.sin(angle);
+        const rotated = image.create(size, size);
+        const footprint = image.create(size, size);
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                const dx = x - (size - 1) / 2;
+                const dy = y - (size - 1) / 2;
+                const sourceX = Math.round(cosine * dx + sine * dy + (LOGO_SIZE - 1) / 2);
+                const sourceY = Math.round(-sine * dx + cosine * dy + (LOGO_SIZE - 1) / 2);
+                if (sourceX < 0 || sourceY < 0 || sourceX >= LOGO_SIZE || sourceY >= LOGO_SIZE) continue;
+                footprint.setPixel(x, y, 1);
+                rotated.setPixel(x, y, logo.getPixel(sourceX, sourceY));
+            }
+        }
         let bestX = -1;
         let bestY = -1;
         let bestScore = -1;
-        // Keep the whole badge inside opaque body pixels, favoring painted panels.
-        for (let y = 0; y <= base.height - LOGO_SIZE; y++) {
-            for (let x = 0; x <= base.width - LOGO_SIZE; x++) {
+        for (let y = 0; y <= base.height - size; y++) {
+            for (let x = 0; x <= base.width - size; x++) {
                 let score = 0;
-                let opaque = true;
-                for (let dy = 0; dy < LOGO_SIZE && opaque; dy++) {
-                    for (let dx = 0; dx < LOGO_SIZE; dx++) {
+                for (let dy = 0; dy < size; dy++) {
+                    for (let dx = 0; dx < size; dx++) {
+                        if (!footprint.getPixel(dx, dy)) continue;
                         const pixel = base.getPixel(x + dx, y + dy);
-                        if (!pixel) {
-                            opaque = false;
-                            break;
-                        }
-                        if (pixel === body || pixel === highlight) score++;
+                        if (pixel) score++;
+                        if (pixel === body || pixel === shadow) score++;
                     }
                 }
-                if (opaque && score > bestScore) {
+                if (score > bestScore) {
                     bestX = x;
                     bestY = y;
                     bestScore = score;
                 }
             }
         }
-        if (bestX < 0) throw "The car image needs an opaque 8x8 area for its logo";
+        if (bestScore <= 0) throw "The car image needs a painted area for its logo";
         const result = base.clone();
-        // Stock poses face east, south, west, north; the drawing's top faces forward.
-        const turns = (frame + 1) % 4;
-        for (let y = 0; y < LOGO_SIZE; y++) {
-            for (let x = 0; x < LOGO_SIZE; x++) {
-                let sourceX = x;
-                let sourceY = y;
-                if (turns === 1) {
-                    sourceX = y;
-                    sourceY = LOGO_SIZE - 1 - x;
-                } else if (turns === 2) {
-                    sourceX = LOGO_SIZE - 1 - x;
-                    sourceY = LOGO_SIZE - 1 - y;
-                } else if (turns === 3) {
-                    sourceX = LOGO_SIZE - 1 - y;
-                    sourceY = x;
-                }
-                const pixel = logo.getPixel(sourceX, sourceY);
-                if (pixel) result.setPixel(bestX + x, bestY + y, pixel);
+        // Diagonal badges are clipped to the existing silhouette.
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                const pixel = rotated.getPixel(x, y);
+                if (pixel && base.getPixel(bestX + x, bestY + y)) result.setPixel(bestX + x, bestY + y, pixel);
             }
         }
         return result;

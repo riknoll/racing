@@ -65,7 +65,7 @@ namespace racing {
                     [6, 7, 9],
                     14,
                     PreviewScrollDirection.E,
-                    BackgroundTileset.Stone
+                    BackgroundTileset.Grass
                 ),
                 new Course(
                     Track.Vancouver,
@@ -101,7 +101,7 @@ namespace racing {
                     [4, 5, 1],
                     3,
                     PreviewScrollDirection.NE,
-                    BackgroundTileset.Grass
+                    BackgroundTileset.Stone
                 ),
                 new Course(
                     Track.Monclava,
@@ -137,7 +137,7 @@ namespace racing {
                     [8, 6, 9],
                     4,
                     PreviewScrollDirection.E,
-                    BackgroundTileset.DarkGrass
+                    BackgroundTileset.DarkStone
                 )
             ];
         }

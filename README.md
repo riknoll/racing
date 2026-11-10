@@ -33,9 +33,29 @@ Commit `track-previews.g.ts` and `track-previews.g.jres` with the source changes
 The dependency-free generator bakes the scrolling/wobbling menu animations;
 CI checks that these assets are current. See [track preview settings](docs/start-game.md#track-previews).
 
+## Regenerating artwork
+
+The PNG originals live in `assets/`. After replacing artwork, run:
+
+```sh
+node assets/create-assets.js
+node --test assets/*.test.js
+makecode build --java-script
+```
+
+Commit `racing-art.g.ts` and `racing-art.g.jres` with the PNGs.
+The dependency-free converter accepts non-interlaced, 8-bit RGBA PNGs and maps
+opaque colors to the nearest Arcade palette color, preserving transparency.
+It extracts the sheet's eleven liveries and eight poses, sharing pose images
+through body/shadow palette swaps wherever possible. Starting lights use one
+unlit panel and one red lamp, composed at runtime; all six source frames are
+checked against that composition. Use `node assets/create-assets.js --check`
+to check that the generated files are current.
+
 ## Track editor
 
-Choose **Track Editor** from the game menu (or call `racing.editTrack()`).
+Set `DEBUG_TRACK_EDITOR` to `true` in `startup.ts` to show **Track Editor**
+in the game menu (hidden by default), or call `racing.editTrack()` directly.
 Choose **New Track** for an empty grid, or select any JSON-defined track to edit
 its original nodes. Back returns to this picker. Rerun batch generation after
 adding or changing track JSON files to update the picker.

@@ -337,7 +337,7 @@ namespace racing {
         miniMenu.setDimensions(menu, width, height);
     }
 
-    export function chooseMenu(title: string, choices: string[], allowBack = true, icons?: Image[], initialSelection = 0, setupBackground?: () => () => void): number {
+    export function chooseMenu(title: string, choices: string[], allowBack = true, icons?: Image[], initialSelection = 0, setupBackground?: () => () => void, titleImage?: Image): number {
         const scripted = scriptedMenuChoice(title, choices, allowBack);
         if (scripted !== undefined) return scripted;
         if (!choices.length) throw "A racing menu needs choices";
@@ -346,16 +346,24 @@ namespace racing {
         }
         let menu: miniMenu.MenuSprite;
         let overlay: scene.Renderable;
+        let selectionCanvas: Image;
         let disposeBackground: () => void;
-        const textSprites: fancyText.TextSprite[] = [];
+        const textSprites: Sprite[] = [];
         let selected = -1;
         let chosen = false;
         game.pushScene();
         try {
             if (setupBackground) disposeBackground = setupBackground();
             else scene.setBackgroundColor(15);
-            const titleSprite = createMenuText(title.toUpperCase(), setupBackground ? 3 : 1, customFont.racing, 1);
+            const titleSprite = titleImage ? sprites.create(titleImage)
+                : createMenuText(title.toUpperCase(), setupBackground ? 3 : 1, customFont.racing, 1);
+            titleSprite.setFlag(SpriteFlag.Ghost, true);
+            titleSprite.setFlag(SpriteFlag.RelativeToCamera, true);
+            titleSprite.z = 102;
+            titleSprite.x = screen.width / 2;
+            titleSprite.top = setupBackground ? 3 : 1;
             textSprites.push(titleSprite);
+            const menuTop = setupBackground ? Math.max(22, titleSprite.bottom + 5) : icons ? 42 : 31;
             const picture = image.create(160, 120);
             if (setupBackground) {
                 drawRoundedBackground(picture, titleSprite.left - 4, titleSprite.top - 2,
@@ -366,16 +374,18 @@ namespace racing {
             if (setupBackground) {
                 overlay = scene.createRenderable(100, (target, camera) => {
                     target.drawTransparentImage(picture, 0, 0);
-                    if (menu) {
-                        let rowTop = menu.top - (menu.yScroll | 0);
+                    if (menu && selectionCanvas) {
+                        selectionCanvas.fill(0);
+                        let rowTop = -(menu.yScroll | 0);
                         for (let i = 0; i < menu.selectedIndex; i++) {
                             rowTop += menu.items[i].getHeight(menu.defaultStyle);
                         }
                         const rowHeight = menu.items[menu.selectedIndex].getHeight(menu.selectedStyle);
                         const backgroundHeight = rowHeight
                             - miniMenu.unpackMargin(menu.selectedStyle.margin, miniMenu.MoveDirection.Down);
-                        drawRoundedBackground(target, menu.left, rowTop, menu.width, backgroundHeight, 9);
-                        drawRoundedBackground(target, menu.left + 1, rowTop + 1, menu.width - 2, backgroundHeight - 2, 12);
+                        drawRoundedBackground(selectionCanvas, 0, rowTop, menu.width, backgroundHeight, 9);
+                        drawRoundedBackground(selectionCanvas, 1, rowTop + 1, menu.width - 2, backgroundHeight - 2, 12);
+                        target.drawTransparentImage(selectionCanvas, menu.left, menu.top);
                     }
                 });
             } else {
@@ -412,9 +422,10 @@ namespace racing {
             miniMenu.setStyleProperty(menu, miniMenu.StyleKind.Selected, miniMenu.StyleProperty.Background, setupBackground ? 0 : 12);
             miniMenu.setStyleProperty(menu, miniMenu.StyleKind.Selected, miniMenu.StyleProperty.BorderColor, setupBackground ? 0 : 9);
             miniMenu.setDimensions(menu, setupBackground ? screen.width : screen.width - 4,
-                setupBackground ? 88 : icons ? 66 : 78);
+                setupBackground ? screen.height - menuTop - 10 : icons ? 66 : 78);
             menu.left = (screen.width - menu.width) / 2;
-            menu.top = setupBackground ? 22 : icons ? 42 : 31;
+            menu.top = menuTop;
+            if (setupBackground) selectionCanvas = image.create(menu.width, menu.height);
             for (let i = 0; i < initialSelection; i++) {
                 miniMenu.moveSelection(menu, miniMenu.MoveDirection.Down);
             }
