@@ -17,6 +17,8 @@ namespace racing {
 
     export const colorMap = racingArt.carColors;
     const teamFrames: Image[][] = [];
+    const teamStyles: CarStyle[] = [];
+    const teamColors: number[][] = [];
 
     export function getCarFrames(colorIndex: number): Image[] {
         colorIndex = colorIndex % colorMap.height;
@@ -49,10 +51,22 @@ namespace racing {
         return getTeamCarFrames(CarTarget.Player);
     }
 
-    export function setTeamCarTheme(style: CarStyle, bodyColor: number, shadowColor: number, target: CarTarget): void {
-        // Temporary: Mercedes uses racing-car artwork; its custom asset is coming later.
-        const source = racingArt.carFrames(0);
-        const updated = recolorCarFrames(source, bodyColor, shadowColor);
+    export function setTeamCarStyle(style: CarStyle, target: CarTarget): void {
+        teamStyles[target] = style;
+        updateTeamCarFrames(target);
+    }
+
+    export function setTeamCarColor(bodyColor: number, shadowColor: number, target: CarTarget): void {
+        teamColors[target] = [bodyColor, shadowColor];
+        updateTeamCarFrames(target);
+    }
+
+    function updateTeamCarFrames(target: CarTarget): void {
+        const mercedes = teamStyles[target] === CarStyle.MercedesCar;
+        const source = mercedes ? racingArt.mercedesCarFrames() : racingArt.carFrames(target);
+        const colors = teamColors[target] || (mercedes ? [1, 6]
+            : [colorMap.getPixel(0, target), colorMap.getPixel(1, target)]);
+        const updated = recolorCarFrames(source, colors[0], colors[1]);
         const frames = getTeamCarFrames(target);
         for (let i = 0; i < updated.length; i++) frames[i] = updated[i];
     }

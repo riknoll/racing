@@ -15,11 +15,8 @@ See [AI racing](ai/README.md) for the added teaching activity.
 - [Teach AI by driving one lap on a track](ai/docs/teach-driver.md): choose a training course, defaulting to one lap on Test Track.
 - [View memories](docs/view-memories.md): reopen saved AI steering and pedal data without driving another lap, including after a simulator restart.
 - [Set team logo](docs/set-team-logo.md): draw a native-size 40x40 starting-block decal beneath a car's grid position.
-- [Set car theme](docs/set-car-theme.md): choose Racing car or Mercedes car and pick the body and shading colors. Mercedes temporarily uses the racing-car artwork until its custom asset arrives.
-
-Both customization blocks have a **+** to choose **player**, **bot 1**, or
-**bot 2**; the collapsed block applies to the player. Themes and logos belong
-to these teams, including when a trained bot races or is watched on its own.
+- [Choose car](docs/choose-car.md): choose Racing car or Mercedes car, each with its own artwork and native colors.
+- [Choose color](docs/choose-color.md): change body and shading colors independently of the car model.
 
 All blocks appear in the **Racing** category and are exposed by
 [api.ts](api.ts) and [ai/activity.ts](ai/activity.ts). [main.ts](main.ts) is listed under
@@ -56,8 +53,12 @@ makecode build --java-script
 Commit `racing-art.g.ts` and `racing-art.g.jres` with the PNGs.
 The dependency-free converter accepts non-interlaced, 8-bit RGBA PNGs and maps
 opaque colors to the nearest Arcade palette color, preserving transparency.
-It extracts the sheet's eleven liveries and eight poses, sharing pose images
-through body/shadow palette swaps wherever possible. Starting lights use one
+It extracts the racing sheet's eleven liveries and eight poses, sharing pose images
+through body/shadow palette swaps wherever possible. `Mercedes-car-sprite-sheet.png`
+provides eight 32x32 poses in the same order: north, northeast, east, southeast,
+south, southwest, west, northwest. Its silver and teal pixels use the body and
+shading controls respectively; black details and transparency stay unchanged.
+Starting lights use one
 unlit panel and one red lamp, composed at runtime; all six source frames are
 checked against that composition. Use `node assets/create-assets.js --check`
 to check that the generated files are current.

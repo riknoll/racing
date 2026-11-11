@@ -103,23 +103,36 @@ namespace racing {
     }
 
     /**
-     * Choose a car style and its body and shading colors.
+     * Choose a car style without changing any explicitly chosen colors.
      * @param style Racing car or Mercedes car
-     * @param bodyColor the body paint color, eg: 1
-     * @param shadowColor the shading and accent color, eg: 6
      * @param target the car's team, defaulting to the player
      */
-    //% blockId=racing_set_car_theme block="set car theme $style body $bodyColor shading $shadowColor||for $target"
-    //% help=github:this/docs/set-car-theme
+    //% blockId=racing_choose_car block="choose car $style||for $target"
+    //% help=github:this/docs/choose-car
     //% group="Car" weight=90
     //% expandableArgumentMode=toggle
     //% inlineInputMode=inline
     //% style.defl=racing.CarStyle.RacingCar
+    //% target.defl=racing.CarTarget.Player
+    export function chooseCar(style: CarStyle, target: CarTarget = CarTarget.Player): void {
+        setTeamCarStyle(style, target);
+    }
+
+    /**
+     * Choose body and shading colors without changing the car style.
+     * @param bodyColor the body paint color, eg: 1
+     * @param shadowColor the shading and accent color, eg: 6
+     * @param target the car's team, defaulting to the player
+     */
+    //% blockId=racing_choose_color block="choose color body $bodyColor shading $shadowColor||for $target"
+    //% help=github:this/docs/choose-color
+    //% group="Car" weight=85
+    //% expandableArgumentMode=toggle
+    //% inlineInputMode=inline
     //% bodyColor.shadow=colorindexpicker bodyColor.defl=1
     //% shadowColor.shadow=colorindexpicker shadowColor.defl=6
     //% target.defl=racing.CarTarget.Player
-    export function setCarTheme(style: CarStyle, bodyColor: number = 1, shadowColor: number = 6,
-        target: CarTarget = CarTarget.Player): void {
-        setTeamCarTheme(style, bodyColor, shadowColor, target);
+    export function chooseColor(bodyColor: number = 1, shadowColor: number = 6, target: CarTarget = CarTarget.Player): void {
+        setTeamCarColor(bodyColor, shadowColor, target);
     }
 }

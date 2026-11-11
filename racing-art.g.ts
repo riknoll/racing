@@ -25,6 +25,22 @@ namespace racingArt {
     //% fixedInstance jres blockIdentity=images._image
     export const carColors = image.ofBuffer(hex``);
     //% fixedInstance jres blockIdentity=images._image
+    export const mercedesEast = image.ofBuffer(hex``);
+    //% fixedInstance jres blockIdentity=images._image
+    export const mercedesSoutheast = image.ofBuffer(hex``);
+    //% fixedInstance jres blockIdentity=images._image
+    export const mercedesSouth = image.ofBuffer(hex``);
+    //% fixedInstance jres blockIdentity=images._image
+    export const mercedesSouthwest = image.ofBuffer(hex``);
+    //% fixedInstance jres blockIdentity=images._image
+    export const mercedesWest = image.ofBuffer(hex``);
+    //% fixedInstance jres blockIdentity=images._image
+    export const mercedesNorthwest = image.ofBuffer(hex``);
+    //% fixedInstance jres blockIdentity=images._image
+    export const mercedesNorth = image.ofBuffer(hex``);
+    //% fixedInstance jres blockIdentity=images._image
+    export const mercedesNortheast = image.ofBuffer(hex``);
+    //% fixedInstance jres blockIdentity=images._image
     export const startLights = image.ofBuffer(hex``);
     //% fixedInstance jres blockIdentity=images._image
     export const redLamp = image.ofBuffer(hex``);
@@ -51,5 +67,9 @@ namespace racingArt {
             case 10: return [carEast, carSoutheast, carSouth, carSouthwest, carWest, carNorthwest, carNorth, carNortheast1];
             default: throw "Choose a valid racing car color";
         }
+    }
+
+    export function mercedesCarFrames(): Image[] {
+        return [mercedesEast, mercedesSoutheast, mercedesSouth, mercedesSouthwest, mercedesWest, mercedesNorthwest, mercedesNorth, mercedesNortheast];
     }
 }

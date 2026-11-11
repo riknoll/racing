@@ -53,7 +53,8 @@
         "docs/race-on-track.md",
         "docs/view-memories.md",
         "docs/set-team-logo.md",
-        "docs/set-car-theme.md"
+        "docs/choose-car.md",
+        "docs/choose-color.md"
     ],
     "testFiles": [
         "main.ts"

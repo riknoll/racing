@@ -116,6 +116,16 @@ function generate() {
     }))
     add("carColors", { width: 2, height: colors.length, pixels: Uint8Array.from(colors.flat()) })
 
+    const mercedesSheet = load("Mercedes-car-sprite-sheet.png")
+    if (mercedesSheet.width !== 32 || mercedesSheet.height !== 256) throw new Error("Expected eight 32x32 Mercedes car poses")
+    const mercedes = directions.map((direction, frame) => {
+        const source = crop(mercedesSheet, 0, ((frame + 2) % 8) * 32, 32, 32)
+        const pixels = source.pixels.map(pixel => pixel === 1 ? 2 : pixel === 6 ? 10 : pixel)
+        const name = "mercedes" + direction
+        add(name, { ...source, pixels })
+        return name
+    })
+
     const lights = load("f1racing-lights1.png")
     add("startLights", lights)
     const firstLit = load("f1racing-lights2.png")
@@ -163,6 +173,10 @@ ${declarations.join("\n")}
 ${cases}
             default: throw "Choose a valid racing car color";
         }
+    }
+
+    export function mercedesCarFrames(): Image[] {
+        return [${mercedes.join(", ")}];
     }
 }
 `,
