@@ -7,13 +7,16 @@ namespace aiRacing {
         readonly timeLimit: number;
         ended = false;
         cancelled = false;
+        private teamLogo: scene.Renderable;
 
         constructor(public readonly bot: BotSlot, course?: racing.Course) {
             if (bot.driver.count() < MIN_EXAMPLES) throw "Train this bot before watching a lap";
             this.course = resolveWatchCourse(bot, course);
             this.track = this.course.createTrack();
+            const target = bot.index + 1;
             this.car = new LearningCar(new racing.RacerStats(100, 100, 100, 100, 100, 100),
-                racing.getCarFrames(bot.index + 1), this.track);
+                racing.getTeamCarFrames(target), this.track);
+            this.teamLogo = racing.createTeamLogo(this.car, target);
             this.car.driver = bot.driver;
             this.timeLimit = Math.max(MIN_ATTEMPT_TIME_MS, bot.teachingMillis * 1.5);
         }
@@ -26,6 +29,12 @@ namespace aiRacing {
                 this.ended = true;
                 this.car.brakeToStop();
             }
+
+        }
+
+        destroy(): void {
+            this.teamLogo.destroy();
+            this.car.destroy();
         }
 
         result(): racing.RaceResult {
@@ -92,7 +101,7 @@ namespace aiRacing {
             racing.releaseMenuButtons();
         } finally {
             if (display) display.destroy();
-            if (watch) watch.car.destroy();
+            if (watch) watch.destroy();
             activeWatch = undefined;
             game.popScene();
         }

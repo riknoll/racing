@@ -52,7 +52,9 @@
         "docs/learn-to-drive.md",
         "docs/race-on-track.md",
         "docs/view-memories.md",
-        "docs/set-car-logo.md"
+        "docs/set-team-logo.md",
+        "docs/choose-car.md",
+        "docs/choose-color.md"
     ],
     "testFiles": [
         "main.ts"

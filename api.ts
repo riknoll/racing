@@ -80,20 +80,66 @@ namespace racing {
     }
 
     /**
-     * Stamp an 8x8 sponsor logo onto the player's car.
-     * @param logo an 8x8 drawing; transparent pixels leave the car visible
+     * Draw a team logo on the track beneath the selected team's starting position.
+     * @param logo a 40x40 drawing; transparent pixels leave the track visible
+     * @param target the player, bot 1, or bot 2
      */
-    //% blockId=racing_set_car_logo block="set car logo $logo"
-    //% help=github:this/docs/set-car-logo
+    //% blockId=racing_set_team_logo block="set team logo $logo for $target"
+    //% help=github:this/docs/set-team-logo
     //% group="Car" weight=100
+    //% inlineInputMode=inline
+    //% target.defl=racing.CarTarget.Player
+    //% logo.shadow=racing_team_logo_image
+    export function setTeamLogo(logo: Image, target: CarTarget): void {
+        setTeamLogoImage(logo, target);
+    }
+
+    /**
+     * A 40x40 image shadow for the team logo block.
+     */
+    //% blockId=racing_team_logo_image block="$logo"
+    //% shim=TD_ID
+    //% blockNamespace=images blockHidden=1 duplicateShadowOnDrag
+    //% help=github:this/docs/set-team-logo
     //% logo.fieldEditor="sprite"
     //% logo.fieldOptions.taggedTemplate="img"
     //% logo.fieldOptions.decompileIndirectFixedInstances="true"
     //% logo.fieldOptions.decompileArgumentAsString="true"
-    //% logo.fieldOptions.sizes="8,8"
-    //% logo.fieldOptions.initWidth="8" logo.fieldOptions.initHeight="8"
+    //% logo.fieldOptions.initWidth="40" logo.fieldOptions.initHeight="40"
     //% logo.fieldOptions.filter="!tile !background !dialog"
-    export function setCarLogo(logo: Image): void {
-        setPlayerLogo(logo);
+    export function _teamLogoImage(logo: Image): Image {
+        return logo;
+    }
+
+    /**
+     * Choose a car style without changing any explicitly chosen colors.
+     * @param style Racing car or Mercedes car
+     * @param target the player, bot 1, or bot 2
+     */
+    //% blockId=racing_choose_car block="choose $style for $target"
+    //% help=github:this/docs/choose-car
+    //% group="Car" weight=90
+    //% inlineInputMode=inline
+    //% style.defl=racing.CarStyle.RacingCar
+    //% target.defl=racing.CarTarget.Player
+    export function chooseCar(style: CarStyle, target: CarTarget): void {
+        setTeamCarStyle(style, target);
+    }
+
+    /**
+     * Choose body and shading colors without changing the car style.
+     * @param bodyColor the body paint color, eg: 1
+     * @param shadowColor the shading and accent color, eg: 6
+     * @param target the player, bot 1, or bot 2
+     */
+    //% blockId=racing_choose_color block="choose color body $bodyColor shading $shadowColor for $target"
+    //% help=github:this/docs/choose-color
+    //% group="Car" weight=85
+    //% inlineInputMode=inline
+    //% bodyColor.shadow=colorindexpicker bodyColor.defl=1
+    //% shadowColor.shadow=colorindexpicker shadowColor.defl=6
+    //% target.defl=racing.CarTarget.Player
+    export function chooseColor(bodyColor: number = 1, shadowColor: number = 6, target: CarTarget): void {
+        setTeamCarColor(bodyColor, shadowColor, target);
     }
 }
