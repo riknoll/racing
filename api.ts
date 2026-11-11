@@ -105,9 +105,7 @@ namespace racing {
     //% logo.fieldOptions.taggedTemplate="img"
     //% logo.fieldOptions.decompileIndirectFixedInstances="true"
     //% logo.fieldOptions.decompileArgumentAsString="true"
-    //% logo.fieldOptions.sizes="40,40"
     //% logo.fieldOptions.initWidth="40" logo.fieldOptions.initHeight="40"
-    //% logo.fieldOptions.disableResize="true"
     //% logo.fieldOptions.filter="!tile !background !dialog"
     export function _teamLogoImage(logo: Image): Image {
         return logo;
