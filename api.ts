@@ -89,6 +89,18 @@ namespace racing {
     //% group="Car" weight=100
     //% inlineInputMode=inline
     //% target.defl=racing.CarTarget.Player
+    //% logo.shadow=racing_team_logo_image
+    export function setTeamLogo(logo: Image, target: CarTarget): void {
+        setTeamLogoImage(logo, target);
+    }
+
+    /**
+     * A 40x40 image shadow for the team logo block.
+     */
+    //% blockId=racing_team_logo_image block="$logo"
+    //% shim=TD_ID
+    //% blockNamespace=images blockHidden=1 duplicateShadowOnDrag
+    //% help=github:this/docs/set-team-logo
     //% logo.fieldEditor="sprite"
     //% logo.fieldOptions.taggedTemplate="img"
     //% logo.fieldOptions.decompileIndirectFixedInstances="true"
@@ -97,8 +109,8 @@ namespace racing {
     //% logo.fieldOptions.initWidth="40" logo.fieldOptions.initHeight="40"
     //% logo.fieldOptions.disableResize="true"
     //% logo.fieldOptions.filter="!tile !background !dialog"
-    export function setTeamLogo(logo: Image, target: CarTarget): void {
-        setTeamLogoImage(logo, target);
+    export function _teamLogoImage(logo: Image): Image {
+        return logo;
     }
 
     /**
