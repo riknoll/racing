@@ -6,19 +6,19 @@ control its silver details and teal accents; black details and transparency
 stay unchanged.
 
 ```sig
-racing.chooseColor(2, 10)
+racing.chooseColor(2, 10, racing.CarTarget.Player)
 ```
 
-Press **+** to select **player**, **bot 1**, or **bot 2**. The collapsed block
-applies to the player.
+Select **player**, **bot 1**, or **bot 2** using the required dropdown,
+which is always visible on the block.
 
 ## Example
 
 Give the player a red racing car and bot 1 a Mercedes in green and blue:
 
 ```blocks
-racing.chooseCar(racing.CarStyle.RacingCar)
-racing.chooseColor(2, 10)
+racing.chooseCar(racing.CarStyle.RacingCar, racing.CarTarget.Player)
+racing.chooseColor(2, 10, racing.CarTarget.Player)
 racing.chooseCar(racing.CarStyle.MercedesCar, racing.CarTarget.Bot1)
 racing.chooseColor(7, 8, racing.CarTarget.Bot1)
 racing.startGame()

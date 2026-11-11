@@ -5,18 +5,19 @@ Each model has its own eight directional poses. Mercedes uses the supplied
 silver/teal artwork unless you explicitly use **choose color**.
 
 ```sig
-racing.chooseCar(racing.CarStyle.MercedesCar)
+racing.chooseCar(racing.CarStyle.MercedesCar, racing.CarTarget.Player)
 ```
 
-Press **+** to select **player**, **bot 1**, or **bot 2**. The collapsed block
-applies to the player. Each team keeps its own model, colors, and logo.
+Select **player**, **bot 1**, or **bot 2** using the required dropdown,
+which is always visible on the block. Each team keeps its own model,
+colors, and logo.
 
 ## Example
 
 Give the player a racing car and bot 1 a Mercedes with its original colors:
 
 ```blocks
-racing.chooseCar(racing.CarStyle.RacingCar)
+racing.chooseCar(racing.CarStyle.RacingCar, racing.CarTarget.Player)
 racing.chooseCar(racing.CarStyle.MercedesCar, racing.CarTarget.Bot1)
 racing.startGame()
 ```

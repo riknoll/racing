@@ -10,17 +10,17 @@ Images of other sizes are centered on the 40x40 canvas: larger images are
 cropped and smaller images get transparent padding. Pixels are not scaled.
 
 ```sig
-racing.setTeamLogo(image.create(40, 40))
+racing.setTeamLogo(image.create(40, 40), racing.CarTarget.Player)
 ```
 
 ## Example
 
 Design your own logo in the sprite editor, then put the logo block before
-starting the game. Press **+** to select **player**, **bot 1**, or **bot 2**.
-The collapsed block applies to the player.
+starting the game. Select **player**, **bot 1**, or **bot 2** using the required
+dropdown, which is always visible on the block.
 
 ```blocks
-racing.setTeamLogo(assets.image`playerStartingBlock`)
+racing.setTeamLogo(assets.image`playerStartingBlock`, racing.CarTarget.Player)
 racing.setTeamLogo(assets.image`bot1StartingBlock`, racing.CarTarget.Bot1)
 racing.startGame()
 ```
