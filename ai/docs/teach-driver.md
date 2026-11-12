@@ -3,6 +3,8 @@
 The teaching block in the **Racing** category records one driving lap on the
 selected course. Its dropdown offers [Test Track](test-track.md) (the default),
 Monclava, Strasbourg, Vancouver, Hanover, Birmingham, Seattle, and Sydney.
+The dropdown is an image grid with animated menu previews, including Test
+Track. Hover over a preview to see the course name.
 The block always teaches **one lap**, including on Test Track.
 The starting menu can instead choose a course followed by 1–4 continuous
 training laps; menu training on Test Track defaults to three laps.

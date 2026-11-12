@@ -4,6 +4,11 @@ Choose **Racing car** or **Mercedes car** without setting its paint colors.
 Each model has its own eight directional poses. Mercedes uses the supplied
 silver/teal artwork unless you explicitly use **choose color**.
 
+The car dropdown is an image grid showing the Racing car in its stock red
+colors and the Mercedes car in its original silver/teal colors. These previews
+always show the base artwork, not the selected team's custom paint. Hover
+over an image to see the model name.
+
 ```sig
 racing.chooseCar(racing.CarStyle.MercedesCar, racing.CarTarget.Player)
 ```

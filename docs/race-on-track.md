@@ -9,6 +9,11 @@ Seattle requires a completed player race on every other course before it can be
 selected, including through this block. Existing saved finishes count; winning
 is not required.
 
+The track dropdown uses an image grid with the same animated previews as the
+game's track menu. Hover over a preview to see its track name. Choosing a
+preview does not change the active map until the race starts, and Seattle's
+unlock requirement still applies.
+
 ```sig
 racing.raceOnTrack(racing.Track.Monclava, 1, racing.RaceDriver.Player)
 ```

@@ -2,6 +2,7 @@
 const fs = require("node:fs")
 const path = require("node:path")
 const { encodeImage } = require("./create-tilemap")
+const { palette } = require("../assets/create-assets")
 
 const root = path.resolve(__dirname, "..")
 const size = 72
@@ -179,6 +180,73 @@ function encodeAnimation(frames) {
     return Buffer.from(bytes.toString("hex")).toString("base64")
 }
 
+function encodeGif(frames) {
+    const header = Buffer.alloc(7)
+    header.writeUInt16LE(frameSize, 0)
+    header.writeUInt16LE(frameSize, 2)
+    header[4] = 0xf3
+    const chunks = [Buffer.from("GIF89a"), header, Buffer.from(palette.flat()),
+        Buffer.from([0x21, 0xff, 11]), Buffer.from("NETSCAPE2.0"), Buffer.from([3, 1, 0, 0, 0])]
+    for (const pixels of frames) {
+        const control = Buffer.from([0x21, 0xf9, 4, 9, 0, 0, 0, 0])
+        control.writeUInt16LE(interval / 10, 4)
+        const descriptor = Buffer.alloc(10)
+        descriptor[0] = 0x2c
+        descriptor.writeUInt16LE(frameSize, 5)
+        descriptor.writeUInt16LE(frameSize, 7)
+        chunks.push(control, descriptor, Buffer.from([4]))
+        const compressed = []
+        const dictionary = new Map()
+        let nextCode = 18, decoderCode = 18, codeSize = 5, first = true
+        let bits = 0, bitCount = 0
+        const write = code => {
+            bits |= code << bitCount
+            bitCount += codeSize
+            while (bitCount >= 8) {
+                compressed.push(bits & 255)
+                bits >>>= 8
+                bitCount -= 8
+            }
+            if (code === 16) {
+                codeSize = 5
+                decoderCode = 18
+                first = true
+            } else if (code !== 17) {
+                // GIF's decoder adds dictionary entries one output code behind the encoder.
+                if (first) first = false
+                else if (++decoderCode === 1 << codeSize && codeSize < 12) codeSize++
+            }
+        }
+        write(16)
+        let prefix = pixels[0]
+        for (let i = 1; i < pixels.length; i++) {
+            const pixel = pixels[i], key = prefix * 16 + pixel
+            const code = dictionary.get(key)
+            if (code !== undefined) prefix = code
+            else {
+                write(prefix)
+                if (nextCode < 4096) dictionary.set(key, nextCode++)
+                else {
+                    write(16)
+                    dictionary.clear()
+                    nextCode = 18
+                }
+                prefix = pixel
+            }
+        }
+        write(prefix)
+        write(17)
+        if (bitCount) compressed.push(bits & 255)
+        for (let offset = 0; offset < compressed.length; offset += 255) {
+            const block = compressed.slice(offset, offset + 255)
+            chunks.push(Buffer.from([block.length]), Buffer.from(block))
+        }
+        chunks.push(Buffer.from([0]))
+    }
+    chunks.push(Buffer.from([0x3b]))
+    return "data:image/gif;base64," + Buffer.concat(chunks).toString("base64")
+}
+
 function generate() {
     const courses = readCourses(), patterns = readPatterns(), resources = {}, declarations = []
     for (const course of courses) {
@@ -189,7 +257,7 @@ function generate() {
             declarations.push(`    //% fixedInstance jres blockIdentity=images._image\n    export const ${id} = image.ofBuffer(hex\`\`);`)
         })
         resources[course.id] = { namespace: "trackPreviewAnimations", mimeType: "application/mkcd-animation",
-            data: encodeAnimation(frames), displayName: course.name + " preview" }
+            data: encodeAnimation(frames), displayName: course.name + " preview", icon: encodeGif(frames) }
     }
     resources["*"] = { mimeType: "image/x-mkcd-f4", dataEncoding: "base64", namespace: "trackPreviewFrames" }
     const cases = courses.map(course => `            case ${JSON.stringify(course.id)}:\n            case ${JSON.stringify(course.name + " preview")}:\n                return [${Array.from({ length: frameCount }, (_, frame) => `trackPreviewFrames.${course.id}${frame}`).join(", ")}];`).join("\n")

@@ -37,7 +37,8 @@ makecode build --java-script
 ```
 
 Commit `track-previews.g.ts` and `track-previews.g.jres` with the source changes.
-The dependency-free generator bakes the scrolling/wobbling menu animations;
+The dependency-free generator bakes the scrolling/wobbling menu animations
+and matching animated GIF icons in JRES for the race/training block grid pickers;
 CI checks that these assets are current. See [track preview settings](docs/start-game.md#track-previews).
 
 ## Regenerating artwork
@@ -58,6 +59,8 @@ through body/shadow palette swaps wherever possible. `Mercedes-car-sprite-sheet.
 provides eight 32x32 poses in the same order: north, northeast, east, southeast,
 south, southwest, west, northwest. Its silver and teal pixels use the body and
 shading controls respectively; black details and transparency stay unchanged.
+The generator also stores a native-color Mercedes preview in JRES for the
+car model grid picker; the racing-car preview uses its existing stock image.
 Starting lights use one
 unlit panel and one red lamp, composed at runtime; all six source frames are
 checked against that composition. Use `node assets/create-assets.js --check`

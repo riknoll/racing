@@ -38,6 +38,9 @@ namespace racing {
     //% help=github:this/docs/race-on-track
     //% group="Game" weight=90
     //% track.defl=racing.Track.Monclava
+    //% track.fieldEditor="gridpicker"
+    //% track.fieldOptions.columns=3 track.fieldOptions.width=220
+    //% track.fieldOptions.tooltips=true
     //% laps.min=1 laps.max=4 laps.defl=1
     //% driver.defl=racing.RaceDriver.Player
     export function raceOnTrack(track: Track, laps: number = 1, driver: RaceDriver = RaceDriver.Player): void {
@@ -121,6 +124,9 @@ namespace racing {
     //% group="Car" weight=90
     //% inlineInputMode=inline
     //% style.defl=racing.CarStyle.RacingCar
+    //% style.fieldEditor="gridpicker"
+    //% style.fieldOptions.columns=2 style.fieldOptions.width=160
+    //% style.fieldOptions.tooltips=true
     //% target.defl=racing.CarTarget.Player
     export function chooseCar(style: CarStyle, target: CarTarget): void {
         setTeamCarStyle(style, target);
