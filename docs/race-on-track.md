@@ -32,6 +32,13 @@ an AI and A to start the race; B does not cancel this block's picker.
 The game menus still support B to go back.
 Press B during an AI race to return, even if the AI gets stuck.
 
+If the followed AI has not moved at least 8 pixels after 5 seconds of active
+driving, the display shows **AI HASN'T STARTED** and suggests retraining with
+examples of pulling away using A/Up. The countdown does not count toward this
+delay. The warning clears when the car moves and does not change the learned
+controls or switch the camera to an opponent. New training ignores stationary
+coasting/braking pauses; an older saved model may need retraining.
+
 ```blocks
 racing.raceOnTrack(racing.Track.Monclava, 2, racing.RaceDriver.AI)
 ```

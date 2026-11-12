@@ -138,6 +138,7 @@ namespace racing {
                 const left = Math.idiv(target.width - width, 2);
                 drawRoundedBackground(target, left - 4, 111, width + 8, font.lineHeight + 2);
                 fancyText.draw("B BACK", target, left, 112, 0, 1, font);
+                drawAIStartupHelp(target, aiPlayer);
             }
         });
 
