@@ -39,9 +39,10 @@ namespace aiRacing {
             const speed = this.speed - other.speed;
             const offRoad = this.offRoad - other.offRoad;
             const aim = angleDifference(this.aim * Math.PI, other.aim * Math.PI) / Math.PI;
-            return 3 * offset * offset + 4 * heading * heading
-                + 2 * nearBend * nearBend + 2 * bend * bend
-                + speed * speed + 2 * offRoad * offRoad + 12 * aim * aim;
+            // Match the car's direction before its lateral position to avoid repeating off-road turns.
+            return 2 * offset * offset + 8 * heading * heading
+                + nearBend * nearBend + bend * bend
+                + speed * speed + 2 * offRoad * offRoad + 24 * aim * aim;
         }
 
         /** Match normal pedals by speed; use the full situation to learn recovery. */

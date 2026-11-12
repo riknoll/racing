@@ -58,6 +58,12 @@ Try braking before corners. If you leave the road, demonstrate getting back:
 brake, reverse while steering if needed, then drive forward. The AI cannot learn
 reversing without reverse examples, and it can copy mistakes.
 
+When testing on a different course, steering comparisons prioritize heading
+and aiming angle over exact distance from the road or bend shape. This makes
+recovery examples more useful across courses without adding a scripted driver.
+If a model still struggles with a circuit's tighter turns, teach on that circuit
+and include examples of slowing down and returning to the road.
+
 If an AI has not moved at least 8 pixels within 5 seconds of active driving,
 the race/watch display suggests retraining and practicing pulling away with
 A/Up. The countdown and paused time do not count. The warning clears if the
@@ -113,7 +119,7 @@ opening the game menu.
    to the road, the angle to a point ahead, nearby and upcoming bends, signed speed,
    and off-road state. The point ahead is a sensor, not a steering command.
 2. [driver.ts](../driver.ts) saves those observations with your steering and pedal
-   actions. Its five-nearest-neighbour model looks for geometry matches for
+   actions. Its five-nearest-neighbour model prioritizes heading and aim for
    steering, and speed/bend/terrain matches for normal pedals. Off-road or
    reverse comparisons also use geometry, so it can learn where to end a
    recovery. The two votes let it turn and accelerate together without confusing

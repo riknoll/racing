@@ -28,7 +28,10 @@ aiRacing.testDriver()
 ```
 
 For each decision, the AI finds the five most similar stored driving situations.
-Steering emphasizes road position and aiming angle. Pedals emphasize speed,
+Steering prioritizes heading relative to the road and aiming angle over exact
+lateral position and bend shape. This helps the model choose a different turn
+as the car rotates during a recovery, rather than keep copying the same
+off-road turn on an unfamiliar course. Pedals emphasize speed,
 approaching bends, and terrain: a stopped car should not copy a moving car's
 coasting just because their positions match. Off-road and reverse comparisons
 also include road position, heading, and aiming angle to distinguish continuing
@@ -39,6 +42,11 @@ coast** separately, then uses the same control flags and physics as your car.
 This is imitation learning, not a scripted waypoint driver. The road geometry
 helps it observe the situation; it does not supply steering commands. There is
 no automatic rescue driver when the AI makes a mistake.
+
+The same observations and saved example format are used, so existing saved
+models use the improved similarity matching without retraining. A clean lap
+on Test Track still does not guarantee success on every course: tighter turns
+and unfamiliar recovery situations may need examples from that course.
 
 Stopped coasting/braking pauses are excluded when recording new training;
 accelerating and reversing from rest are still learned. Older saved examples
