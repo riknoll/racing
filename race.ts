@@ -1,11 +1,18 @@
 namespace racing {
     export enum Track {
+        //% jres=trackPreviewAnimations.monclava
         Monclava = 7,
+        //% jres=trackPreviewAnimations.strasbourg
         Strasbourg,
+        //% jres=trackPreviewAnimations.vancouver
         Vancouver,
+        //% jres=trackPreviewAnimations.hanover
         Hanover,
+        //% jres=trackPreviewAnimations.birmingham
         Birmingham,
+        //% jres=trackPreviewAnimations.seattle
         Seattle,
+        //% jres=trackPreviewAnimations.sydney
         Sydney
     }
 
@@ -138,6 +145,7 @@ namespace racing {
                 const left = Math.idiv(target.width - width, 2);
                 drawRoundedBackground(target, left - 4, 111, width + 8, font.lineHeight + 2);
                 fancyText.draw("B BACK", target, left, 112, 0, 1, font);
+                drawAIStartupHelp(target, aiPlayer);
             }
         });
 

@@ -41,6 +41,8 @@ namespace racingArt {
     //% fixedInstance jres blockIdentity=images._image
     export const mercedesNortheast = image.ofBuffer(hex``);
     //% fixedInstance jres blockIdentity=images._image
+    export const mercedesPreview = image.ofBuffer(hex``);
+    //% fixedInstance jres blockIdentity=images._image
     export const startLights = image.ofBuffer(hex``);
     //% fixedInstance jres blockIdentity=images._image
     export const redLamp = image.ofBuffer(hex``);

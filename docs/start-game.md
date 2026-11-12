@@ -224,6 +224,10 @@ The background shape follows the wobbling road while its pattern scrolls
 independently. The preview size stays fixed. The animation ends when the menu closes.
 Standalone `createTrackPreview(course)` calls return a copy of the first compiled
 frame, so editing it does not change the carousel.
+The same eight frames and 50 ms timing are also encoded as looping GIF icons
+in each `trackPreviewAnimations` JRES resource. The race and training blocks
+use those icons in their track grid pickers; enum values and track unlocks
+are unchanged. GIF icons use the default Arcade palette.
 The former runtime color overrides and `wobble` argument have been removed;
 customize the source settings and regenerate instead.
 

@@ -9,9 +9,9 @@ namespace racing {
     }
 
     export enum CarStyle {
-        //% block="Racing car"
+        //% block="Racing car" jres=racingArt.carEast
         RacingCar,
-        //% block="Mercedes car"
+        //% block="Mercedes car" jres=racingArt.mercedesPreview
         MercedesCar
     }
 

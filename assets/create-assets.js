@@ -125,6 +125,7 @@ function generate() {
         add(name, { ...source, pixels })
         return name
     })
+    add("mercedesPreview", crop(mercedesSheet, 0, 64, 32, 32))
 
     const lights = load("f1racing-lights1.png")
     add("startLights", lights)

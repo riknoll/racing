@@ -3,6 +3,8 @@
 The teaching block in the **Racing** category records one driving lap on the
 selected course. Its dropdown offers [Test Track](test-track.md) (the default),
 Monclava, Strasbourg, Vancouver, Hanover, Birmingham, Seattle, and Sydney.
+The dropdown is an image grid with animated menu previews, including Test
+Track. Hover over a preview to see the course name.
 The block always teaches **one lap**, including on Test Track.
 The starting menu can instead choose a course followed by 1–4 continuous
 training laps; menu training on Test Track defaults to three laps.
@@ -46,9 +48,22 @@ Examples are recorded about ten times per second and when the pedal action chang
 so a brief brake or acceleration tap is not missed. There is no finish-early
 shortcut; Up is recorded as acceleration, just like A.
 
+Waiting while stopped is treated as thinking time, not a driving example.
+Coasting or holding the brake below 1 pixel/second is not recorded.
+Accelerating or reversing from rest is still recorded immediately, as is
+braking while moving. This prevents a long pause from teaching the AI to
+stay stopped at the starting line.
+
 Try braking before corners. If you leave the road, demonstrate getting back:
 brake, reverse while steering if needed, then drive forward. The AI cannot learn
 reversing without reverse examples, and it can copy mistakes.
+
+If an AI has not moved at least 8 pixels within 5 seconds of active driving,
+the race/watch display suggests retraining and practicing pulling away with
+A/Up. The countdown and paused time do not count. The warning clears if the
+car moves; it does not force acceleration or replace the learned driver.
+Existing saved examples are not rewritten, so an older model that learned
+long stops may need a new training lap.
 
 Starting another lesson replaces only the chosen bot slot's examples. Completed
 training is automatically saved using a [compact buffer](storage.md), and restored

@@ -33,6 +33,22 @@ namespace trackPreviewFrames {
     //% fixedInstance jres blockIdentity=images._image
     export const vancouver7 = image.ofBuffer(hex``);
     //% fixedInstance jres blockIdentity=images._image
+    export const sydney0 = image.ofBuffer(hex``);
+    //% fixedInstance jres blockIdentity=images._image
+    export const sydney1 = image.ofBuffer(hex``);
+    //% fixedInstance jres blockIdentity=images._image
+    export const sydney2 = image.ofBuffer(hex``);
+    //% fixedInstance jres blockIdentity=images._image
+    export const sydney3 = image.ofBuffer(hex``);
+    //% fixedInstance jres blockIdentity=images._image
+    export const sydney4 = image.ofBuffer(hex``);
+    //% fixedInstance jres blockIdentity=images._image
+    export const sydney5 = image.ofBuffer(hex``);
+    //% fixedInstance jres blockIdentity=images._image
+    export const sydney6 = image.ofBuffer(hex``);
+    //% fixedInstance jres blockIdentity=images._image
+    export const sydney7 = image.ofBuffer(hex``);
+    //% fixedInstance jres blockIdentity=images._image
     export const strasbourg0 = image.ofBuffer(hex``);
     //% fixedInstance jres blockIdentity=images._image
     export const strasbourg1 = image.ofBuffer(hex``);
@@ -97,22 +113,6 @@ namespace trackPreviewFrames {
     //% fixedInstance jres blockIdentity=images._image
     export const seattle7 = image.ofBuffer(hex``);
     //% fixedInstance jres blockIdentity=images._image
-    export const sydney0 = image.ofBuffer(hex``);
-    //% fixedInstance jres blockIdentity=images._image
-    export const sydney1 = image.ofBuffer(hex``);
-    //% fixedInstance jres blockIdentity=images._image
-    export const sydney2 = image.ofBuffer(hex``);
-    //% fixedInstance jres blockIdentity=images._image
-    export const sydney3 = image.ofBuffer(hex``);
-    //% fixedInstance jres blockIdentity=images._image
-    export const sydney4 = image.ofBuffer(hex``);
-    //% fixedInstance jres blockIdentity=images._image
-    export const sydney5 = image.ofBuffer(hex``);
-    //% fixedInstance jres blockIdentity=images._image
-    export const sydney6 = image.ofBuffer(hex``);
-    //% fixedInstance jres blockIdentity=images._image
-    export const sydney7 = image.ofBuffer(hex``);
-    //% fixedInstance jres blockIdentity=images._image
     export const testtrack0 = image.ofBuffer(hex``);
     //% fixedInstance jres blockIdentity=images._image
     export const testtrack1 = image.ofBuffer(hex``);
@@ -144,6 +144,10 @@ namespace trackPreviewAnimations {
             checkSettings(course, [8, 6, 9], 9, racing.PreviewScrollDirection.S, "ed039a074000ed0340007502750240003103fc003103b8017502750275023103660522069a07220613099a07cf099a078b0a57088b0a1309de06c00c2206c00c6605040c6605480b22068b0a2206cf09", 64);
             return getAnimation("vancouver");
         }
+        if (course.trackId === racing.Track.Sydney) {
+            checkSettings(course, [14, 4, 5], 2, racing.PreviewScrollDirection.N, "80065502e40755024709a401f909f2005c0b40000e0c4000c00cf200c00ca4015c0b6b045c0bce05ab0a3207f909320795088006e4071c05e4076b043207b9038006b903ce056b04ce05ce05800632078006e407ce0595081c059508b903e407070332074000a4014000f200f2004000a40140000703f200b903a4011c055502", 64);
+            return getAnimation("sydney");
+        }
         if (course.trackId === racing.Track.Strasbourg) {
             checkSettings(course, [4, 5, 1], 3, racing.PreviewScrollDirection.NE, "db047d077d071e0a76091e0ac70acd08c70a2c06c00c3304c00ce800180c40006f0b40007d073304d4068a037609e800cd0840007d079101d406910183054000330440008a03e8008a033902e202e202e800e20240008a0340003304e800db043902db04", 64);
             return getAnimation("strasbourg");
@@ -159,10 +163,6 @@ namespace trackPreviewAnimations {
         if (course.trackId === racing.Track.Seattle) {
             checkSettings(course, [8, 6, 9], 4, racing.PreviewScrollDirection.E, "39024000830540008305e800e2028a0383052c0625088a03cd08330476098305cd082c067609d4061e0a2c066f0bcd081e0a1e0a6f0bc00ccd08c00c2c067d078305d40633042c06390233049101e202e80091014000e80040004000", 64);
             return getAnimation("seattle");
-        }
-        if (course.trackId === racing.Track.Sydney) {
-            checkSettings(course, [14, 4, 5], 2, racing.PreviewScrollDirection.N, "80065502e40755024709a401f909f2005c0b40000e0c4000c00cf200c00ca4015c0b6b045c0bce05ab0a3207f909320795088006e4071c05e4076b043207b9038006b903ce056b04ce05ce05800632078006e407ce0595081c059508b903e407070332074000a4014000f200f2004000a40140000703f200b903a4011c055502", 64);
-            return getAnimation("sydney");
         }
         if (course.trackId === undefined && course.name === "Test Track") {
             checkSettings(course, [12, 14, 4], 6, racing.PreviewScrollDirection.SW, "40004000c0014000c002c000e003c000e003c001e004c001e0044002800240028002c002e004c002e004c0034000c003", 64);
@@ -187,6 +187,9 @@ namespace trackPreviewAnimations {
             case "vancouver":
             case "Vancouver preview":
                 return [trackPreviewFrames.vancouver0, trackPreviewFrames.vancouver1, trackPreviewFrames.vancouver2, trackPreviewFrames.vancouver3, trackPreviewFrames.vancouver4, trackPreviewFrames.vancouver5, trackPreviewFrames.vancouver6, trackPreviewFrames.vancouver7];
+            case "sydney":
+            case "Sydney preview":
+                return [trackPreviewFrames.sydney0, trackPreviewFrames.sydney1, trackPreviewFrames.sydney2, trackPreviewFrames.sydney3, trackPreviewFrames.sydney4, trackPreviewFrames.sydney5, trackPreviewFrames.sydney6, trackPreviewFrames.sydney7];
             case "strasbourg":
             case "Strasbourg preview":
                 return [trackPreviewFrames.strasbourg0, trackPreviewFrames.strasbourg1, trackPreviewFrames.strasbourg2, trackPreviewFrames.strasbourg3, trackPreviewFrames.strasbourg4, trackPreviewFrames.strasbourg5, trackPreviewFrames.strasbourg6, trackPreviewFrames.strasbourg7];
@@ -199,9 +202,6 @@ namespace trackPreviewAnimations {
             case "seattle":
             case "Seattle preview":
                 return [trackPreviewFrames.seattle0, trackPreviewFrames.seattle1, trackPreviewFrames.seattle2, trackPreviewFrames.seattle3, trackPreviewFrames.seattle4, trackPreviewFrames.seattle5, trackPreviewFrames.seattle6, trackPreviewFrames.seattle7];
-            case "sydney":
-            case "Sydney preview":
-                return [trackPreviewFrames.sydney0, trackPreviewFrames.sydney1, trackPreviewFrames.sydney2, trackPreviewFrames.sydney3, trackPreviewFrames.sydney4, trackPreviewFrames.sydney5, trackPreviewFrames.sydney6, trackPreviewFrames.sydney7];
             case "testtrack":
             case "Test Track preview":
                 return [trackPreviewFrames.testtrack0, trackPreviewFrames.testtrack1, trackPreviewFrames.testtrack2, trackPreviewFrames.testtrack3, trackPreviewFrames.testtrack4, trackPreviewFrames.testtrack5, trackPreviewFrames.testtrack6, trackPreviewFrames.testtrack7];

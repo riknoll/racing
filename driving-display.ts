@@ -21,6 +21,22 @@ namespace racing {
         };
     }
 
+    export function drawAIStartupHelp(target: Image, car: aiRacing.LearningCar): void {
+        if (!car.startupStalled) return;
+        drawRoundedBackground(target, 4, 40, target.width - 8, 32);
+        const titleFont = fancyText.geometric_sans_6;
+        const bodyFont = fancyText.tiny_4;
+        const title = "AI HASN'T STARTED";
+        const retry = "Try training again.";
+        const guidance = "Practice pulling away with A/Up.";
+        fancyText.draw(title, target, Math.idiv(target.width - fancyText.getTextWidth(titleFont, title), 2),
+            43, 0, 5, titleFont);
+        fancyText.draw(retry, target, Math.idiv(target.width - fancyText.getTextWidth(bodyFont, retry), 2),
+            55, 0, 1, bodyFont);
+        fancyText.draw(guidance, target, Math.idiv(target.width - fancyText.getTextWidth(bodyFont, guidance), 2),
+            63, 0, 1, bodyFont);
+    }
+
     /** Use the upstream instruments for human races, training, and AI watches. */
     export class DrivingDisplay {
         private visible = true;
@@ -54,6 +70,7 @@ namespace racing {
                 drawing.drawThickLine(target, drawing.shiftedByCamera(gate.start), drawing.shiftedByCamera(gate.end), 3, 2);
                 racing.drawLapIndicator(135, 0, Math.min(car.currentLap, laps - 1), laps);
                 racing.drawSpeedometer(19, 20, 99, car.speed, car.stats.topSpeed);
+                if (car instanceof aiRacing.LearningCar) drawAIStartupHelp(target, car);
             }, () => this.visible);
             this.stopFollowing = followRaceCar(car);
         }

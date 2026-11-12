@@ -40,6 +40,14 @@ This is imitation learning, not a scripted waypoint driver. The road geometry
 helps it observe the situation; it does not supply steering commands. There is
 no automatic rescue driver when the AI makes a mistake.
 
+Stopped coasting/braking pauses are excluded when recording new training;
+accelerating and reversing from rest are still learned. Older saved examples
+are kept unchanged. If the AI has not moved at least 8 pixels after 5 seconds
+of active driving, an **AI HASN'T STARTED** message suggests retraining and
+practicing pulling away with A/Up. Pauses do not count toward this delay.
+The message clears once it moves and will not reappear for a later stop.
+It does not inject driving commands; B still ends a menu watch early.
+
 ## Ending the attempt
 
 The attempt ends after one lap or when its time limit is reached. The limit is

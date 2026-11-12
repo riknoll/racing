@@ -25,6 +25,9 @@ namespace aiRacing {
     //% help=github:this/ai/docs/teach-driver
     //% blockNamespace=racing group="Game" weight=80
     //% track.defl=racing.TrainingTrack.TestTrack
+    //% track.fieldEditor="gridpicker"
+    //% track.fieldOptions.columns=3 track.fieldOptions.width=220
+    //% track.fieldOptions.tooltips=true
     export function teachDriver(track: racing.TrainingTrack = racing.TrainingTrack.TestTrack): void {
         if (track !== racing.TrainingTrack.TestTrack
             && !racing.getCourses().some(course => course.trackId + 1 === track)) throw "Choose a valid training track";

@@ -1,13 +1,20 @@
 namespace racing {
     export enum TrainingTrack {
-        //% block="Test Track"
+        //% block="Test Track" jres=trackPreviewAnimations.testtrack
         TestTrack,
+        //% jres=trackPreviewAnimations.monclava
         Monclava = 8,
+        //% jres=trackPreviewAnimations.strasbourg
         Strasbourg,
+        //% jres=trackPreviewAnimations.vancouver
         Vancouver,
+        //% jres=trackPreviewAnimations.hanover
         Hanover,
+        //% jres=trackPreviewAnimations.birmingham
         Birmingham,
+        //% jres=trackPreviewAnimations.seattle
         Seattle,
+        //% jres=trackPreviewAnimations.sydney
         Sydney
     }
 
